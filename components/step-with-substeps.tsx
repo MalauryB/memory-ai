@@ -1,0 +1,423 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import {
+  CheckCircle2,
+  Circle,
+  Loader2,
+  ChevronDown,
+  ChevronRight,
+  Sparkles,
+  Calendar as CalendarIcon,
+} from "lucide-react"
+
+interface ProjectSubstep {
+  id: string
+  title: string
+  description: string
+  status: "pending" | "in_progress" | "completed" | "skipped"
+  estimated_duration: string
+  scheduled_date: string | null
+  is_recurring: boolean
+  recurrence_type: string
+  order_index: number
+}
+
+interface ProjectStep {
+  id: string
+  title: string
+  description: string
+  estimated_duration: string
+  status: "pending" | "in_progress" | "completed"
+  order_index: number
+}
+
+interface Props {
+  step: ProjectStep
+  stepIndex: number
+  projectId: string
+  projectTitle: string
+  projectCategory: string
+  onStepStatusChange: () => void
+}
+
+export function StepWithSubsteps({
+  step,
+  stepIndex,
+  projectId,
+  projectTitle,
+  projectCategory,
+  onStepStatusChange,
+}: Props) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [substeps, setSubsteps] = useState<ProjectSubstep[]>([])
+  const [loadingSubsteps, setLoadingSubsteps] = useState(false)
+  const [generatingSubsteps, setGeneratingSubsteps] = useState(false)
+  const [updatingSubstep, setUpdatingSubstep] = useState<string | null>(null)
+  const [updatingStep, setUpdatingStep] = useState(false)
+
+  useEffect(() => {
+    if (isExpanded && substeps.length === 0) {
+      fetchSubsteps()
+    }
+  }, [isExpanded])
+
+  async function fetchSubsteps() {
+    setLoadingSubsteps(true)
+    try {
+      const response = await fetch(`/api/projects/${projectId}/steps/${step.id}/substeps`)
+      if (response.ok) {
+        const data = await response.json()
+        setSubsteps(data.substeps)
+      }
+    } catch (error) {
+      console.error("Erreur:", error)
+    } finally {
+      setLoadingSubsteps(false)
+    }
+  }
+
+  async function generateSubsteps() {
+    setGeneratingSubsteps(true)
+    try {
+      // Générer les sous-étapes avec Claude
+      const genResponse = await fetch("/api/generate-substeps", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          stepTitle: step.title,
+          stepDescription: step.description,
+          projectTitle,
+          projectCategory,
+        }),
+      })
+
+      if (genResponse.ok) {
+        const { substeps: generatedSubsteps } = await genResponse.json()
+
+        // Créer les sous-étapes
+        const createResponse = await fetch(`/api/projects/${projectId}/steps/${step.id}/substeps`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            substeps: generatedSubsteps,
+          }),
+        })
+
+        if (createResponse.ok) {
+          await fetchSubsteps()
+        }
+      }
+    } catch (error) {
+      console.error("Erreur:", error)
+    } finally {
+      setGeneratingSubsteps(false)
+    }
+  }
+
+  async function updateStepStatus(newStatus: "pending" | "in_progress" | "completed") {
+    setUpdatingStep(true)
+    try {
+      const response = await fetch(`/api/projects/${projectId}/steps/${step.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: newStatus }),
+      })
+
+      if (response.ok) {
+        onStepStatusChange()
+      }
+    } catch (error) {
+      console.error("Erreur:", error)
+    } finally {
+      setUpdatingStep(false)
+    }
+  }
+
+  async function updateSubstepStatus(
+    substepId: string,
+    newStatus: "pending" | "in_progress" | "completed"
+  ) {
+    setUpdatingSubstep(substepId)
+    try {
+      const response = await fetch(
+        `/api/projects/${projectId}/steps/${step.id}/substeps/${substepId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: newStatus }),
+        }
+      )
+
+      if (response.ok) {
+        await fetchSubsteps()
+        onStepStatusChange()
+      }
+    } catch (error) {
+      console.error("Erreur:", error)
+    } finally {
+      setUpdatingSubstep(null)
+    }
+  }
+
+  const getNextStatus = (currentStatus: string) => {
+    switch (currentStatus) {
+      case "pending":
+        return "in_progress"
+      case "in_progress":
+        return "completed"
+      case "completed":
+        return "pending"
+      default:
+        return "pending"
+    }
+  }
+
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return null
+    const date = new Date(dateStr)
+    return date.toLocaleDateString("fr-FR", {
+      day: "numeric",
+      month: "short",
+    })
+  }
+
+  const completedSubsteps = substeps.filter((s) => s.status === "completed").length
+  const totalSubsteps = substeps.length
+
+  return (
+    <Card
+      className={`border-border/50 backdrop-blur-sm transition-all ${
+        step.status === "completed"
+          ? "bg-accent/5 border-accent/20"
+          : step.status === "in_progress"
+          ? "bg-card/50 border-accent/50"
+          : "bg-card/50"
+      }`}
+    >
+      {/* En-tête de l'étape */}
+      <div className="p-6">
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0 mt-1">
+            {updatingStep ? (
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            ) : step.status === "completed" ? (
+              <CheckCircle2 className="h-6 w-6 text-accent" />
+            ) : step.status === "in_progress" ? (
+              <Circle className="h-6 w-6 text-accent fill-accent/20" />
+            ) : (
+              <Circle className="h-6 w-6 text-muted-foreground" />
+            )}
+          </div>
+
+          <div className="flex-1 space-y-2">
+            <div className="flex items-start justify-between gap-4">
+              <div
+                className="space-y-1 flex-1 cursor-pointer"
+                onClick={() => updateStepStatus(getNextStatus(step.status) as any)}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground font-light">
+                    Étape {stepIndex + 1}
+                  </span>
+                  {step.estimated_duration && (
+                    <span className="text-xs text-muted-foreground font-light">
+                      • {step.estimated_duration}
+                    </span>
+                  )}
+                  {totalSubsteps > 0 && (
+                    <span className="text-xs text-muted-foreground font-light">
+                      • {completedSubsteps}/{totalSubsteps} sous-étapes
+                    </span>
+                  )}
+                </div>
+                <h4
+                  className={`font-light text-lg ${
+                    step.status === "completed" ? "text-muted-foreground line-through" : ""
+                  }`}
+                >
+                  {step.title}
+                </h4>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span
+                  className={`text-xs px-2 py-1 rounded-full font-light whitespace-nowrap ${
+                    step.status === "completed"
+                      ? "bg-accent/20 text-accent"
+                      : step.status === "in_progress"
+                      ? "bg-blue-500/20 text-blue-500"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {step.status === "completed"
+                    ? "Terminé"
+                    : step.status === "in_progress"
+                    ? "En cours"
+                    : "À faire"}
+                </span>
+
+                {!loadingSubsteps && substeps.length === 0 && !generatingSubsteps && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      generateSubsteps()
+                    }}
+                  >
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    Décomposer
+                  </Button>
+                )}
+
+                {generatingSubsteps && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    <span>Génération...</span>
+                  </div>
+                )}
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setIsExpanded(!isExpanded)
+                  }}
+                >
+                  {isExpanded ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {step.description && (
+              <p
+                className={`text-sm font-light cursor-pointer ${
+                  step.status === "completed" ? "text-muted-foreground" : "text-muted-foreground"
+                }`}
+                onClick={() => updateStepStatus(getNextStatus(step.status) as any)}
+              >
+                {step.description}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Section des sous-étapes */}
+      {isExpanded && (
+        <div className="px-6 pb-6 pt-2 border-t border-border/30">
+          {loadingSubsteps ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : substeps.length === 0 ? (
+            <div className="text-center py-8 space-y-4">
+              <p className="text-sm text-muted-foreground font-light">
+                Aucune sous-étape définie pour cette étape
+              </p>
+              <Button
+                onClick={generateSubsteps}
+                disabled={generatingSubsteps}
+                size="sm"
+                variant="outline"
+              >
+                {generatingSubsteps ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Génération...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Générer avec l'IA
+                  </>
+                )}
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-2 mt-4">
+              {substeps
+                .sort((a, b) => a.order_index - b.order_index)
+                .map((substep) => (
+                  <div
+                    key={substep.id}
+                    className={`p-3 rounded-lg border transition-all cursor-pointer ${
+                      substep.status === "completed"
+                        ? "bg-accent/5 border-accent/20"
+                        : substep.status === "in_progress"
+                        ? "bg-blue-500/5 border-blue-500/20"
+                        : "bg-background/50 border-border/50"
+                    }`}
+                    onClick={() => updateSubstepStatus(substep.id, getNextStatus(substep.status) as any)}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 mt-0.5">
+                        {updatingSubstep === substep.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        ) : substep.status === "completed" ? (
+                          <CheckCircle2 className="h-4 w-4 text-accent" />
+                        ) : substep.status === "in_progress" ? (
+                          <Circle className="h-4 w-4 text-blue-500 fill-blue-500/20" />
+                        ) : (
+                          <Circle className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </div>
+
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <p
+                            className={`text-sm font-light ${
+                              substep.status === "completed"
+                                ? "text-muted-foreground line-through"
+                                : ""
+                            }`}
+                          >
+                            {substep.title}
+                          </p>
+                          {substep.scheduled_date && (
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <CalendarIcon className="h-3 w-3" />
+                              <span>{formatDate(substep.scheduled_date)}</span>
+                            </div>
+                          )}
+                        </div>
+                        {substep.description && (
+                          <p className="text-xs text-muted-foreground font-light">
+                            {substep.description}
+                          </p>
+                        )}
+                      </div>
+
+                      {substep.estimated_duration && (
+                        <span className="text-xs text-muted-foreground font-light whitespace-nowrap">
+                          {substep.estimated_duration}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
+      )}
+    </Card>
+  )
+}

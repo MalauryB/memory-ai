@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Plus, Target, Calendar, TrendingUp, MessageSquare, LogOut, FolderKanban, ListTodo } from "lucide-react"
+import { Plus, Target, Calendar, TrendingUp, MessageSquare, LogOut, FolderKanban, ListTodo, User } from "lucide-react"
 import { GoalCard } from "@/components/goal-card"
 import { DailyPlanner } from "@/components/daily-planner"
 import { ProgressView } from "@/components/progress-view"
@@ -58,6 +58,9 @@ export default function Home() {
             </Button>
             <Button variant="ghost" size="icon" className="rounded-full" onClick={() => router.push("/nouveau-projet")}>
               <Plus className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="rounded-full" onClick={() => router.push("/profil")}>
+              <User className="h-5 w-5" />
             </Button>
             <Button variant="ghost" size="icon" className="rounded-full" onClick={handleSignOut}>
               <LogOut className="h-5 w-5" />

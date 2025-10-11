@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { ArrowLeft, Calendar, CheckCircle2, Circle, Loader2, Pencil } from "lucide-react"
+import { ArrowLeft, Calendar, Loader2, Pencil } from "lucide-react"
 import { getUser } from "@/lib/auth"
+import { StepWithSubsteps } from "@/components/step-with-substeps"
 
 interface ProjectStep {
   id: string
@@ -38,7 +39,6 @@ export default function ProjectDetailPage() {
 
   const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
-  const [updatingStep, setUpdatingStep] = useState<string | null>(null)
 
   useEffect(() => {
     checkUserAndFetchProject()
@@ -69,40 +69,6 @@ export default function ProjectDetailPage() {
     }
   }
 
-  async function updateStepStatus(stepId: string, newStatus: "pending" | "in_progress" | "completed") {
-    setUpdatingStep(stepId)
-    try {
-      const response = await fetch(`/api/projects/${projectId}/steps/${stepId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status: newStatus }),
-      })
-
-      if (response.ok) {
-        // Recharger le projet
-        await fetchProject()
-      }
-    } catch (error) {
-      console.error("Erreur:", error)
-    } finally {
-      setUpdatingStep(null)
-    }
-  }
-
-  const getNextStatus = (currentStatus: string) => {
-    switch (currentStatus) {
-      case "pending":
-        return "in_progress"
-      case "in_progress":
-        return "completed"
-      case "completed":
-        return "pending"
-      default:
-        return "pending"
-    }
-  }
 
   const formatDeadline = (deadline: string | null) => {
     if (!deadline) return null
@@ -219,89 +185,20 @@ export default function ProjectDetailPage() {
               {project.project_steps
                 .sort((a, b) => a.order_index - b.order_index)
                 .map((step, index) => (
-                  <Card
+                  <StepWithSubsteps
                     key={step.id}
-                    className={`p-6 border-border/50 backdrop-blur-sm transition-all cursor-pointer ${
-                      step.status === "completed"
-                        ? "bg-accent/5 border-accent/20"
-                        : step.status === "in_progress"
-                        ? "bg-card/50 border-accent/50"
-                        : "bg-card/50"
-                    }`}
-                    onClick={() => updateStepStatus(step.id, getNextStatus(step.status) as any)}
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 mt-1">
-                        {updatingStep === step.id ? (
-                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                        ) : step.status === "completed" ? (
-                          <CheckCircle2 className="h-6 w-6 text-accent" />
-                        ) : step.status === "in_progress" ? (
-                          <Circle className="h-6 w-6 text-accent fill-accent/20" />
-                        ) : (
-                          <Circle className="h-6 w-6 text-muted-foreground" />
-                        )}
-                      </div>
-
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground font-light">
-                                Étape {index + 1}
-                              </span>
-                              {step.estimated_duration && (
-                                <span className="text-xs text-muted-foreground font-light">
-                                  • {step.estimated_duration}
-                                </span>
-                              )}
-                            </div>
-                            <h4
-                              className={`font-light text-lg ${
-                                step.status === "completed"
-                                  ? "text-muted-foreground line-through"
-                                  : ""
-                              }`}
-                            >
-                              {step.title}
-                            </h4>
-                          </div>
-                          <span
-                            className={`text-xs px-2 py-1 rounded-full font-light whitespace-nowrap ${
-                              step.status === "completed"
-                                ? "bg-accent/20 text-accent"
-                                : step.status === "in_progress"
-                                ? "bg-blue-500/20 text-blue-500"
-                                : "bg-muted text-muted-foreground"
-                            }`}
-                          >
-                            {step.status === "completed"
-                              ? "Terminé"
-                              : step.status === "in_progress"
-                              ? "En cours"
-                              : "À faire"}
-                          </span>
-                        </div>
-
-                        {step.description && (
-                          <p
-                            className={`text-sm font-light ${
-                              step.status === "completed"
-                                ? "text-muted-foreground"
-                                : "text-muted-foreground"
-                            }`}
-                          >
-                            {step.description}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
+                    step={step}
+                    stepIndex={index}
+                    projectId={projectId}
+                    projectTitle={project.title}
+                    projectCategory={project.category}
+                    onStepStatusChange={fetchProject}
+                  />
                 ))}
             </div>
 
             <p className="text-sm text-muted-foreground font-light text-center pt-4">
-              💡 Cliquez sur une étape pour changer son statut
+              💡 Cliquez sur une étape pour changer son statut, ou déployez-la pour voir et gérer ses sous-étapes
             </p>
           </div>
         </div>
