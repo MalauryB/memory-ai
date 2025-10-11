@@ -5,6 +5,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import { NewProjectForm } from "@/components/new-project-form"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { getUser } from "@/lib/auth"
 
 export default function NewProjectPage() {
@@ -64,7 +65,7 @@ export default function NewProjectPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <header className="border-b border-border/50 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
-        <div className="container mx-auto px-6 py-6">
+        <div className="container mx-auto px-6 py-6 flex items-center justify-between">
           <Button
             variant="ghost"
             className="font-light"
@@ -73,6 +74,7 @@ export default function NewProjectPage() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Retour
           </Button>
+          <ThemeToggle />
         </div>
       </header>
 
