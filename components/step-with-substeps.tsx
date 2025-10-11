@@ -11,7 +11,20 @@ import {
   ChevronRight,
   Sparkles,
   Calendar as CalendarIcon,
+  Pencil,
+  Trash2,
 } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
 interface ProjectSubstep {
   id: string
@@ -57,9 +70,20 @@ export function StepWithSubsteps({
   const [generatingSubsteps, setGeneratingSubsteps] = useState(false)
   const [updatingSubstep, setUpdatingSubstep] = useState<string | null>(null)
   const [updatingStep, setUpdatingStep] = useState(false)
+  const [editingSubstep, setEditingSubstep] = useState<ProjectSubstep | null>(null)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editForm, setEditForm] = useState({
+    title: "",
+    description: "",
+    estimated_duration: "",
+    scheduled_date: "",
+  })
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [deletingSubstep, setDeletingSubstep] = useState<string | null>(null)
+  const [hasBeenDecomposed, setHasBeenDecomposed] = useState(false)
 
   useEffect(() => {
-    if (isExpanded && substeps.length === 0) {
+    if (isExpanded && substeps.length === 0 && !hasBeenDecomposed) {
       fetchSubsteps()
     }
   }, [isExpanded])
@@ -71,6 +95,8 @@ export function StepWithSubsteps({
       if (response.ok) {
         const data = await response.json()
         setSubsteps(data.substeps)
+        // Marquer comme décomposé dès qu'on a chargé les substeps (même si vide)
+        setHasBeenDecomposed(true)
       }
     } catch (error) {
       console.error("Erreur:", error)
@@ -112,6 +138,7 @@ export function StepWithSubsteps({
 
         if (createResponse.ok) {
           await fetchSubsteps()
+          setHasBeenDecomposed(true)
         }
       }
     } catch (error) {
@@ -180,6 +207,73 @@ export function StepWithSubsteps({
         return "pending"
       default:
         return "pending"
+    }
+  }
+
+  function openEditDialog(substep: ProjectSubstep) {
+    setEditingSubstep(substep)
+    setEditForm({
+      title: substep.title,
+      description: substep.description || "",
+      estimated_duration: substep.estimated_duration || "",
+      scheduled_date: substep.scheduled_date || "",
+    })
+    setIsEditDialogOpen(true)
+  }
+
+  async function saveSubstepEdit() {
+    if (!editingSubstep) return
+
+    setSavingEdit(true)
+    try {
+      const response = await fetch(
+        `/api/projects/${projectId}/steps/${step.id}/substeps/${editingSubstep.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: editForm.title,
+            description: editForm.description,
+            estimated_duration: editForm.estimated_duration,
+            scheduled_date: editForm.scheduled_date || null,
+          }),
+        }
+      )
+
+      if (response.ok) {
+        await fetchSubsteps()
+        setIsEditDialogOpen(false)
+        setEditingSubstep(null)
+      }
+    } catch (error) {
+      console.error("Erreur:", error)
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
+  async function deleteSubstep(substepId: string) {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer cette sous-étape ?")) return
+
+    setDeletingSubstep(substepId)
+    try {
+      const response = await fetch(
+        `/api/projects/${projectId}/steps/${step.id}/substeps/${substepId}`,
+        {
+          method: "DELETE",
+        }
+      )
+
+      if (response.ok) {
+        await fetchSubsteps()
+        onStepStatusChange()
+      }
+    } catch (error) {
+      console.error("Erreur:", error)
+    } finally {
+      setDeletingSubstep(null)
     }
   }
 
@@ -267,7 +361,7 @@ export function StepWithSubsteps({
                     : "À faire"}
                 </span>
 
-                {!loadingSubsteps && substeps.length === 0 && !generatingSubsteps && (
+                {!loadingSubsteps && !hasBeenDecomposed && !generatingSubsteps && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -359,17 +453,19 @@ export function StepWithSubsteps({
                 .map((substep) => (
                   <div
                     key={substep.id}
-                    className={`p-3 rounded-lg border transition-all cursor-pointer ${
+                    className={`p-3 rounded-lg border transition-all ${
                       substep.status === "completed"
                         ? "bg-accent/5 border-accent/20"
                         : substep.status === "in_progress"
                         ? "bg-blue-500/5 border-blue-500/20"
                         : "bg-background/50 border-border/50"
                     }`}
-                    onClick={() => updateSubstepStatus(substep.id, getNextStatus(substep.status) as any)}
                   >
                     <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 mt-0.5">
+                      <div
+                        className="flex-shrink-0 mt-0.5 cursor-pointer"
+                        onClick={() => updateSubstepStatus(substep.id, getNextStatus(substep.status) as any)}
+                      >
                         {updatingSubstep === substep.id ? (
                           <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                         ) : substep.status === "completed" ? (
@@ -381,7 +477,10 @@ export function StepWithSubsteps({
                         )}
                       </div>
 
-                      <div className="flex-1 space-y-1">
+                      <div
+                        className="flex-1 space-y-1 cursor-pointer"
+                        onClick={() => updateSubstepStatus(substep.id, getNextStatus(substep.status) as any)}
+                      >
                         <div className="flex items-center gap-2">
                           <p
                             className={`text-sm font-light ${
@@ -406,11 +505,42 @@ export function StepWithSubsteps({
                         )}
                       </div>
 
-                      {substep.estimated_duration && (
-                        <span className="text-xs text-muted-foreground font-light whitespace-nowrap">
-                          {substep.estimated_duration}
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1">
+                        {substep.estimated_duration && (
+                          <span className="text-xs text-muted-foreground font-light whitespace-nowrap mr-2">
+                            {substep.estimated_duration}
+                          </span>
+                        )}
+
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 opacity-60 hover:opacity-100"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            openEditDialog(substep)
+                          }}
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 opacity-60 hover:opacity-100 hover:text-red-500"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            deleteSubstep(substep.id)
+                          }}
+                          disabled={deletingSubstep === substep.id}
+                        >
+                          {deletingSubstep === substep.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3 w-3" />
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -418,6 +548,87 @@ export function StepWithSubsteps({
           )}
         </div>
       )}
+
+      {/* Dialogue d'édition de sous-étape */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Modifier la sous-étape</DialogTitle>
+            <DialogDescription>
+              Modifiez les informations de la sous-étape
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Titre</Label>
+              <Input
+                id="title"
+                value={editForm.title}
+                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                placeholder="Titre de la sous-étape"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={editForm.description}
+                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                placeholder="Description (optionnel)"
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="duration">Durée estimée</Label>
+                <Input
+                  id="duration"
+                  value={editForm.estimated_duration}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, estimated_duration: e.target.value })
+                  }
+                  placeholder="ex: 2h, 30min"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="date">Date prévue</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={editForm.scheduled_date}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, scheduled_date: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+              disabled={savingEdit}
+            >
+              Annuler
+            </Button>
+            <Button onClick={saveSubstepEdit} disabled={savingEdit || !editForm.title.trim()}>
+              {savingEdit ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Enregistrement...
+                </>
+              ) : (
+                "Enregistrer"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }
