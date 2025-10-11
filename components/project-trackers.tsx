@@ -95,6 +95,23 @@ export function ProjectTrackers({ projectId, projectTitle, projectCategory }: Pr
     }
   }
 
+  async function handleDelete(trackerId: string) {
+    try {
+      const response = await fetch(`/api/trackers/${trackerId}`, {
+        method: "DELETE",
+      })
+
+      if (response.ok) {
+        // Rafraîchir la liste des trackers
+        await fetchProjectTrackers()
+      } else {
+        console.error("Erreur lors de la suppression du tracker")
+      }
+    } catch (error) {
+      console.error("Erreur:", error)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -170,6 +187,7 @@ export function ProjectTrackers({ projectId, projectTitle, projectCategory }: Pr
                 key={tracker.id}
                 tracker={tracker}
                 onComplete={handleComplete}
+                onDelete={handleDelete}
                 isCompletedToday={completedToday.has(tracker.id)}
               />
             ))}

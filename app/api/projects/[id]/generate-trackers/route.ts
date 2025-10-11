@@ -44,42 +44,136 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     console.log("✅ Projet récupéré:", project.title, "avec", project.project_steps?.length || 0, "étapes")
 
-    // 2. Générer des substeps trackées basées sur les étapes du projet
-    const substepsToCreate = []
+    // 2. Utiliser Claude AI pour générer des trackers intelligents et contextuels
+    const anthropicApiKey = process.env.ANTHROPIC_API_KEY
 
-    // Tracker général du projet (quotidien)
-    substepsToCreate.push({
+    let generatedTrackers = []
+
+    if (anthropicApiKey) {
+      console.log("🤖 Utilisation de Claude AI pour générer des trackers intelligents...")
+
+      try {
+        // Préparer le contexte pour Claude
+        const projectContext = {
+          title: project.title,
+          description: project.description,
+          category: project.category,
+          steps: project.project_steps?.map((s: any) => ({
+            title: s.title,
+            description: s.description
+          }))
+        }
+
+        const prompt = `Tu es un expert en formation d'habitudes et planification de vie.
+
+Analyse ce projet et génère 3-5 trackers d'habitudes CONCRETS et ACTIONNABLES pour aider l'utilisateur à réussir ce projet.
+
+Projet:
+Titre: ${projectContext.title}
+Description: ${projectContext.description}
+Catégorie: ${projectContext.category || "Non spécifiée"}
+Étapes du projet: ${JSON.stringify(projectContext.steps, null, 2)}
+
+IMPORTANT - Les trackers doivent être:
+1. **Concrets et actionnables** (ex: "Préparer son sac de sport la veille", pas "Travailler sur le projet")
+2. **Spécifiques au contexte** du projet (sport → hydratation, échauffement ; apprentissage → révision, pratique)
+3. **Habitudes quotidiennes ou régulières** qui supportent le projet
+4. **Variés** : préparation, action, récupération, maintenance
+5. **Réalistes** et faciles à suivre
+
+Exemples pour un projet "Courir un marathon":
+- "Préparer mon sac de sport la veille" (daily)
+- "M'hydrater : boire 2L d'eau" (daily)
+- "Faire mes étirements post-course" (daily)
+- "Préparer mes repas fitness du lendemain" (daily)
+- "Repos actif : marche 30min" (every_x_days: 2)
+
+Exemples pour un projet "Apprendre le piano":
+- "Pratiquer mes gammes 15min" (daily)
+- "Réviser le morceau de la semaine" (daily)
+- "Accorder mon piano" (weekly)
+- "Écouter 3 morceaux de référence" (every_x_days: 2)
+
+Réponds UNIQUEMENT avec un JSON valide (pas de markdown, pas de \`\`\`):
+{
+  "trackers": [
+    {
+      "title": "Titre court et clair",
+      "description": "Description de l'habitude",
+      "recurrence_type": "daily" | "every_x_days" | "weekly",
+      "recurrence_value": 1,
+      "icon": "target" | "dumbbell" | "droplet" | "flame" | "book" | "utensils" | "heart" | "check-circle",
+      "color": "#6366f1" | "#ef4444" | "#10b981" | "#f59e0b" | "#8b5cf6"
+    }
+  ]
+}`
+
+        const response = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": anthropicApiKey,
+            "anthropic-version": "2023-06-01",
+          },
+          body: JSON.stringify({
+            model: "claude-3-5-sonnet-20241022",
+            max_tokens: 2048,
+            messages: [
+              {
+                role: "user",
+                content: prompt,
+              },
+            ],
+          }),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          const aiResponse = data.content[0].text
+          console.log("🤖 Réponse Claude:", aiResponse)
+
+          // Parser la réponse JSON
+          const parsed = JSON.parse(aiResponse)
+          generatedTrackers = parsed.trackers || []
+          console.log("✅ IA a généré", generatedTrackers.length, "trackers")
+        } else {
+          console.error("❌ Erreur API Claude:", await response.text())
+        }
+      } catch (error) {
+        console.error("❌ Erreur lors de la génération IA:", error)
+      }
+    }
+
+    // Fallback : si pas d'IA ou erreur, générer des trackers basiques
+    if (generatedTrackers.length === 0) {
+      console.log("⚠️ Utilisation des trackers par défaut (pas d'IA)")
+      generatedTrackers = [
+        {
+          title: `Travail quotidien sur ${project.title}`,
+          description: `Consacrer du temps à l'avancement de ${project.title}`,
+          recurrence_type: "daily",
+          recurrence_value: 1,
+          icon: "target",
+          color: "#6366f1"
+        }
+      ]
+    }
+
+    // 3. Créer les substeps à partir des trackers générés
+    const substepsToCreate = generatedTrackers.map((tracker: any, index: number) => ({
       project_id: projectId,
       step_id: project.project_steps?.[0]?.id || null,
-      title: `Travail quotidien sur ${project.title}`,
-      description: `Consacrer du temps à l'avancement de ${project.title}`,
+      title: tracker.title,
+      description: tracker.description,
       tracking_enabled: true,
-      recurrence_type: "daily",
-      recurrence_value: 1,
+      recurrence_type: tracker.recurrence_type,
+      recurrence_value: tracker.recurrence_value,
       recurrence_start_date: new Date().toISOString().split("T")[0],
       status: "pending",
-      order_index: 0,
-      icon: "target",
-      color: "#6366f1"
-    })
-
-    // Si il y a des étapes, créer un tracker de révision
-    if (project.project_steps && project.project_steps.length > 0) {
-      substepsToCreate.push({
-        project_id: projectId,
-        step_id: project.project_steps[0].id,
-        title: `Révision - ${project.title}`,
-        description: `Revoir et consolider les acquis de ${project.title}`,
-        tracking_enabled: true,
-        recurrence_type: "every_x_days",
-        recurrence_value: 2,
-        recurrence_start_date: new Date().toISOString().split("T")[0],
-        status: "pending",
-        order_index: 1,
-        icon: "refresh-cw",
-        color: "#8b5cf6"
-      })
-    }
+      order_index: index,
+      icon: tracker.icon || "target",
+      color: tracker.color || "#6366f1"
+    }))
 
     console.log("📝 Substeps à créer:", substepsToCreate.length)
 
