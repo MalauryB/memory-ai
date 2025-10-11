@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Non authentifié", details: authError?.message }, { status: 401 })
     }
 
-    const { title, description, category, deadline, steps } = await request.json()
+    const { title, description, category, deadline, imageUrl, steps } = await request.json()
 
     if (!title || !description) {
       return NextResponse.json(
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("Tentative de création du projet avec user_id:", user?.id)
-    console.log("Données du projet:", { title, description, category, deadline })
+    console.log("Données du projet:", { title, description, category, deadline, imageUrl })
 
     // Créer le projet
     const { data: project, error: projectError } = await supabase
@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
         description,
         category,
         deadline: deadline || null,
+        image_url: imageUrl || null,
         progress: 0,
         status: "active",
       })

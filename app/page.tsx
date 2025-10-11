@@ -4,11 +4,12 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Plus, Target, Calendar, TrendingUp, MessageSquare, LogOut } from "lucide-react"
+import { Plus, Target, Calendar, TrendingUp, MessageSquare, LogOut, FolderKanban } from "lucide-react"
 import { GoalCard } from "@/components/goal-card"
 import { DailyPlanner } from "@/components/daily-planner"
 import { ProgressView } from "@/components/progress-view"
 import { AIChat } from "@/components/ai-chat"
+import { ProjectsList } from "@/components/projects-list"
 import { getUser, signOut } from "@/lib/auth"
 
 type View = "dashboard" | "goals" | "planner" | "progress" | "chat"
@@ -99,7 +100,11 @@ export default function Home() {
             <section className="space-y-8 max-w-4xl">
               <div className="flex items-center justify-between">
                 <h3 className="text-2xl font-light tracking-tight">Objectifs en cours</h3>
-                <Button variant="ghost" className="text-accent hover:text-accent/80">
+                <Button
+                  variant="ghost"
+                  className="text-accent hover:text-accent/80"
+                  onClick={() => setCurrentView("goals")}
+                >
                   Voir tout
                 </Button>
               </div>
@@ -122,6 +127,7 @@ export default function Home() {
           </div>
         )}
 
+        {currentView === "goals" && <ProjectsList />}
         {currentView === "planner" && <DailyPlanner />}
         {currentView === "progress" && <ProgressView />}
         {currentView === "chat" && <AIChat />}
@@ -137,6 +143,14 @@ export default function Home() {
               onClick={() => setCurrentView("dashboard")}
             >
               <Target className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`rounded-full ${currentView === "goals" ? "text-accent" : "text-muted-foreground"}`}
+              onClick={() => setCurrentView("goals")}
+            >
+              <FolderKanban className="h-5 w-5" />
             </Button>
             <Button
               variant="ghost"
