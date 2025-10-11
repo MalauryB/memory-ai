@@ -44,7 +44,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     console.log("✅ Projet récupéré:", project.title, "avec", project.project_steps?.length || 0, "étapes")
 
-    // 2. Utiliser Claude AI pour générer des trackers intelligents et contextuels
+    // 2. Récupérer les trackers existants pour éviter les doublons
+    const { data: existingTrackers } = await supabase
+      .from("project_substeps")
+      .select("title, description")
+      .eq("project_id", projectId)
+      .eq("tracking_enabled", true)
+
+    console.log("📊 Trackers existants:", existingTrackers?.length || 0)
+
+    // 3. Utiliser Claude AI pour générer des trackers intelligents et contextuels
     const anthropicApiKey = process.env.ANTHROPIC_API_KEY
 
     let generatedTrackers = []
@@ -61,18 +70,27 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           steps: project.project_steps?.map((s: any) => ({
             title: s.title,
             description: s.description
-          }))
+          })),
+          existingTrackers: existingTrackers?.map((t: any) => t.title) || []
         }
 
         const prompt = `Tu es un expert en formation d'habitudes et planification de vie.
 
-Analyse ce projet et génère 3-5 trackers d'habitudes CONCRETS et ACTIONNABLES pour aider l'utilisateur à réussir ce projet.
+Analyse ce projet et génère 3-5 NOUVEAUX trackers d'habitudes CONCRETS et ACTIONNABLES pour aider l'utilisateur à réussir ce projet.
 
 Projet:
 Titre: ${projectContext.title}
 Description: ${projectContext.description}
 Catégorie: ${projectContext.category || "Non spécifiée"}
 Étapes du projet: ${JSON.stringify(projectContext.steps, null, 2)}
+
+${projectContext.existingTrackers.length > 0 ? `
+⚠️ TRACKERS DÉJÀ EXISTANTS (NE PAS DUPLIQUER) :
+${projectContext.existingTrackers.map((t: string) => `- ${t}`).join('\n')}
+
+Tu DOIS générer des trackers DIFFÉRENTS et COMPLÉMENTAIRES à ceux qui existent déjà.
+Si tous les aspects importants sont déjà couverts, propose des trackers plus avancés ou des variantes.
+` : ''}
 
 IMPORTANT - Les trackers doivent être:
 1. **Concrets et actionnables** (ex: "Préparer son sac de sport la veille", pas "Travailler sur le projet")
