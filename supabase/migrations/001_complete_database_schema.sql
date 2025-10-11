@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS project_steps (
 -- Sous-étapes détaillées avec système de tracking intégré
 CREATE TABLE IF NOT EXISTS project_substeps (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  step_id UUID NOT NULL REFERENCES project_steps(id) ON DELETE CASCADE,
+  step_id UUID REFERENCES project_steps(id) ON DELETE CASCADE,
   project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
 
   -- Informations de base
@@ -487,6 +487,11 @@ DECLARE
   total_substeps INTEGER;
   completed_substeps INTEGER;
 BEGIN
+  -- Ne rien faire si la substep n'a pas de step_id (tracker direct)
+  IF NEW.step_id IS NULL THEN
+    RETURN NEW;
+  END IF;
+
   -- Compter les sous-étapes
   SELECT COUNT(*) INTO total_substeps
   FROM project_substeps

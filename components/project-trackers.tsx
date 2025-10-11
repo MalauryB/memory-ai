@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Loader2, Plus, Activity, AlertCircle } from "lucide-react"
+import { Loader2, Plus, Activity, AlertCircle, Sparkles } from "lucide-react"
 import { TrackerCard } from "@/components/tracker-card"
+import { CreateTrackerDialog } from "@/components/create-tracker-dialog"
 import { Tracker } from "@/types/tracker"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
@@ -130,21 +131,43 @@ export function ProjectTrackers({ projectId, projectTitle, projectCategory }: Pr
           </p>
         </div>
 
-        {trackers.length === 0 && (
-          <Button onClick={handleGenerateTrackers} disabled={generating} className="font-light">
-            {generating ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Génération...
-              </>
-            ) : (
-              <>
-                <Plus className="h-4 w-4 mr-2" />
-                Générer les trackers
-              </>
-            )}
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {trackers.length === 0 ? (
+            <Button onClick={handleGenerateTrackers} disabled={generating} className="font-light">
+              {generating ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Génération...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Générer avec IA
+                </>
+              )}
+            </Button>
+          ) : (
+            <>
+              <CreateTrackerDialog
+                projectId={projectId}
+                onTrackerCreated={fetchProjectTrackers}
+              />
+              <Button onClick={handleGenerateTrackers} disabled={generating} variant="outline" className="font-light">
+                {generating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Génération...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Générer avec IA
+                  </>
+                )}
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       {trackers.length === 0 ? (
@@ -193,19 +216,12 @@ export function ProjectTrackers({ projectId, projectTitle, projectCategory }: Pr
             ))}
           </div>
 
-          <Button onClick={handleGenerateTrackers} disabled={generating} variant="outline" className="font-light w-full">
-            {generating ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Régénération en cours...
-              </>
-            ) : (
-              <>
-                <Plus className="h-4 w-4 mr-2" />
-                Régénérer les trackers
-              </>
-            )}
-          </Button>
+          <div className="flex items-center gap-2">
+            <CreateTrackerDialog
+              projectId={projectId}
+              onTrackerCreated={fetchProjectTrackers}
+            />
+          </div>
         </>
       )}
     </div>
