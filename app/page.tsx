@@ -4,16 +4,17 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Plus, Target, Calendar, TrendingUp, MessageSquare, LogOut, FolderKanban, ListTodo, User } from "lucide-react"
+import { Plus, Target, Calendar, TrendingUp, MessageSquare, LogOut, FolderKanban, ListTodo, User, Activity } from "lucide-react"
 import { GoalCard } from "@/components/goal-card"
 import { DailyPlanner } from "@/components/daily-planner"
 import { ProgressView } from "@/components/progress-view"
 import { AIChat } from "@/components/ai-chat"
 import { ProjectsList } from "@/components/projects-list"
+import { TrackersView } from "@/components/trackers-view"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { getUser, signOut } from "@/lib/auth"
 
-type View = "dashboard" | "goals" | "planner" | "progress" | "chat"
+type View = "dashboard" | "goals" | "planner" | "progress" | "chat" | "trackers"
 
 export default function Home() {
   const [currentView, setCurrentView] = useState<View>("dashboard")
@@ -138,12 +139,13 @@ export default function Home() {
         {currentView === "goals" && <ProjectsList />}
         {currentView === "planner" && <DailyPlanner />}
         {currentView === "progress" && <ProgressView />}
+        {currentView === "trackers" && <TrackersView />}
         {currentView === "chat" && <AIChat />}
       </main>
 
       <nav className="border-t border-border/50 backdrop-blur-sm sticky bottom-0 bg-background/80">
         <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-around max-w-2xl mx-auto">
+          <div className="flex items-center justify-around max-w-3xl mx-auto">
             <Button
               variant="ghost"
               size="icon"
@@ -159,6 +161,14 @@ export default function Home() {
               onClick={() => setCurrentView("goals")}
             >
               <FolderKanban className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`rounded-full ${currentView === "trackers" ? "text-accent" : "text-muted-foreground"}`}
+              onClick={() => setCurrentView("trackers")}
+            >
+              <Activity className="h-5 w-5" />
             </Button>
             <Button
               variant="ghost"

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { ProjectTrackers } from "@/components/project-trackers"
 import { ArrowLeft, Calendar, Loader2, Pencil } from "lucide-react"
 import { getUser } from "@/lib/auth"
 import { StepWithSubsteps } from "@/components/step-with-substeps"
@@ -176,6 +177,13 @@ export default function ProjectDetailPage() {
               </div>
             </Card>
           </div>
+
+          {/* Trackers du projet */}
+          <ProjectTrackers
+            projectId={projectId}
+            projectTitle={project.title}
+            projectCategory={project.category}
+          />
 
           {/* Liste des étapes */}
           <div className="space-y-4">
