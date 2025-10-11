@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Plus, Target, Calendar, TrendingUp, MessageSquare, LogOut, FolderKanban } from "lucide-react"
+import { Plus, Target, Calendar, TrendingUp, MessageSquare, LogOut, FolderKanban, ListTodo } from "lucide-react"
 import { GoalCard } from "@/components/goal-card"
 import { DailyPlanner } from "@/components/daily-planner"
 import { ProgressView } from "@/components/progress-view"
@@ -53,6 +53,9 @@ export default function Home() {
           <h1 className="text-2xl font-light tracking-tight text-balance">Life Architect</h1>
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            <Button variant="ghost" size="icon" className="rounded-full" onClick={() => router.push("/agenda")}>
+              <ListTodo className="h-5 w-5" />
+            </Button>
             <Button variant="ghost" size="icon" className="rounded-full" onClick={() => router.push("/nouveau-projet")}>
               <Plus className="h-5 w-5" />
             </Button>
