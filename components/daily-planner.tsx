@@ -189,9 +189,9 @@ export function DailyPlanner() {
               <div key={task.id} className="relative group">
                 <Card
                   className={`p-6 border backdrop-blur-sm transition-all ${
-                    isBreak ? "bg-blue-500/5 border-blue-500/30" :
+                    isBreak ? "bg-accent/5 border-accent/30" :
                     isSuggestion ? "bg-purple-500/5 border-purple-500/30" :
-                    isCustomActivity ? "bg-green-500/5 border-green-500/30" :
+                    isCustomActivity ? "bg-accent/5 border-accent/30" :
                     "bg-card/50 border-border"
                   } ${
                     task.completed ? "opacity-50" : "hover:border-accent/50"
@@ -207,7 +207,7 @@ export function DailyPlanner() {
                   )}
                   {isBreak && (
                     <div className="flex items-center justify-center w-5 h-5 mt-1">
-                      <Coffee className="h-4 w-4 text-blue-500" />
+                      <Coffee className="h-4 w-4 text-accent" />
                     </div>
                   )}
                   <div className="flex-1 space-y-2">
@@ -264,7 +264,7 @@ export function DailyPlanner() {
                         </Badge>
                       )}
                       {isCustomActivity && (
-                        <Badge variant="outline" className="font-normal text-xs border-green-500/30 text-green-600">
+                        <Badge variant="outline" className="font-normal text-xs border-accent/30 text-accent">
                           Activité perso
                         </Badge>
                       )}
