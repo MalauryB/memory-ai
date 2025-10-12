@@ -198,7 +198,7 @@ export function AgendaView() {
                     key={step.stepId}
                     className={`p-5 border backdrop-blur-sm transition-all cursor-pointer ${
                       step.stepStatus === "in_progress"
-                        ? "bg-blue-500/5 border-blue-500/30"
+                        ? "bg-accent/5 border-accent/30"
                         : "bg-card/50 border-border"
                     }`}
                     onClick={() =>
@@ -214,7 +214,7 @@ export function AgendaView() {
                         {updatingStep === step.stepId ? (
                           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                         ) : step.stepStatus === "in_progress" ? (
-                          <Circle className="h-5 w-5 text-blue-500 fill-blue-500/20" />
+                          <Circle className="h-5 w-5 text-accent fill-accent/20" />
                         ) : (
                           <Circle className="h-5 w-5 text-muted-foreground" />
                         )}
@@ -248,7 +248,7 @@ export function AgendaView() {
                       <span
                         className={`text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap self-start ${
                           step.stepStatus === "in_progress"
-                            ? "bg-blue-500/20 text-blue-500"
+                            ? "bg-accent/20 text-accent"
                             : "bg-muted text-muted-foreground"
                         }`}
                       >
