@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { Clock, Loader2, Sparkles, FolderOpen, MapPin, Coffee, Lightbulb } from "lucide-react"
+import { Clock, Loader2, Sparkles, FolderOpen, MapPin, Coffee, Lightbulb, X } from "lucide-react"
 import { PlanningConfigurator } from "@/components/planning-configurator"
 
 interface DailyTask {
@@ -65,7 +65,7 @@ export function DailyPlanner() {
     )
     setTasks(newTasks)
 
-    // Sauvegarder en base (optionnel, à implémenter)
+    // Sauvegarder en base
     try {
       await fetch(`/api/daily-plan/items/${taskId}`, {
         method: "PATCH",
@@ -76,6 +76,20 @@ export function DailyPlanner() {
       })
     } catch (error) {
       console.error("Erreur sauvegarde:", error)
+    }
+  }
+
+  async function deleteTask(taskId: string) {
+    try {
+      const response = await fetch(`/api/daily-plan/items/${taskId}`, {
+        method: "DELETE"
+      })
+
+      if (response.ok) {
+        setTasks(tasks.filter(t => t.id !== taskId))
+      }
+    } catch (error) {
+      console.error("Erreur suppression:", error)
     }
   }
 
@@ -109,7 +123,7 @@ export function DailyPlanner() {
 
   if (loading) {
     return (
-      <div className="space-y-12 max-w-3xl">
+      <div className="space-y-12 max-w-4xl mx-auto">
         <div className="space-y-4">
           <h2 className="text-4xl font-light tracking-tight text-balance">Planning du jour</h2>
         </div>
@@ -121,7 +135,7 @@ export function DailyPlanner() {
   }
 
   return (
-    <div className="space-y-12 max-w-3xl">
+    <div className="space-y-12 max-w-4xl mx-auto">
       <div className="space-y-4">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -165,18 +179,18 @@ export function DailyPlanner() {
             const isCustomActivity = task.itemType === 'custom_activity'
 
             return (
-              <Card
-                key={task.id}
-                className={`p-6 border-border/50 backdrop-blur-sm transition-all ${
-                  isBreak ? "bg-blue-500/5 border-blue-500/20" :
-                  isSuggestion ? "bg-purple-500/5 border-purple-500/20" :
-                  isCustomActivity ? "bg-green-500/5 border-green-500/20" :
-                  "bg-card/50"
-                } ${
-                  task.completed ? "opacity-50" : "hover:border-accent/50"
-                }`}
-              >
-                <div className="flex items-start gap-4">
+              <div key={task.id} className="relative group">
+                <Card
+                  className={`p-6 border-border/50 backdrop-blur-sm transition-all ${
+                    isBreak ? "bg-blue-500/5 border-blue-500/20" :
+                    isSuggestion ? "bg-purple-500/5 border-purple-500/20" :
+                    isCustomActivity ? "bg-green-500/5 border-green-500/20" :
+                    "bg-card/50"
+                  } ${
+                    task.completed ? "opacity-50" : "hover:border-accent/50"
+                  }`}
+                >
+                  <div className="flex items-start gap-4">
                   {!isBreak && (
                     <Checkbox
                       checked={task.completed || false}
@@ -250,7 +264,15 @@ export function DailyPlanner() {
                     </div>
                   </div>
                 </div>
-              </Card>
+                </Card>
+                <button
+                  onClick={() => deleteTask(task.id)}
+                  className="absolute top-4 right-4 p-1.5 rounded-md bg-background/80 backdrop-blur-sm border border-border/50 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive hover:text-destructive-foreground hover:border-destructive"
+                  title="Retirer cette tâche du planning"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             )
           })}
         </div>
