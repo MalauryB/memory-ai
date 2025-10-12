@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Plus, Calendar, LogOut, FolderKanban, ListTodo, User, Activity, CalendarDays } from "lucide-react"
+import { Calendar, LogOut, FolderKanban, ListTodo, User, Activity, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react"
 import { DailyPlanner } from "@/components/daily-planner"
 import { ProjectsList } from "@/components/projects-list"
 import { TrackersView } from "@/components/trackers-view"
@@ -18,6 +18,7 @@ type View = "goals" | "planner" | "trackers" | "agenda" | "calendar"
 export default function Home() {
   const [currentView, setCurrentView] = useState<View>("goals")
   const [loading, setLoading] = useState(true)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -49,66 +50,74 @@ export default function Home() {
   return (
     <div className="min-h-screen flex">
       {/* Sidebar gauche */}
-      <aside className="w-64 border-r border-border bg-card/30 backdrop-blur-sm flex flex-col sticky top-0 h-screen">
-        {/* Logo */}
-        <div className="p-6 border-b border-border">
-          <h1 className="text-xl font-semibold tracking-tight">Life Architect</h1>
+      <aside className={`border-r border-border bg-card/30 backdrop-blur-sm flex flex-col sticky top-0 h-screen transition-all duration-300 ${sidebarCollapsed ? "w-16" : "w-64"}`}>
+        {/* Logo et bouton collapse */}
+        <div className="p-6 border-b border-border flex items-center justify-between">
+          {!sidebarCollapsed && (
+            <h1 className="text-xl font-semibold tracking-tight">Life Architect</h1>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full flex-shrink-0"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          >
+            {sidebarCollapsed ? (
+              <ChevronRight className="h-5 w-5" />
+            ) : (
+              <ChevronLeft className="h-5 w-5" />
+            )}
+          </Button>
         </div>
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-2">
           <Button
-            variant={currentView === "goals" ? "secondary" : "ghost"}
-            className={`w-full justify-start font-normal ${currentView === "goals" ? "bg-accent/10 text-accent" : ""}`}
-            onClick={() => setCurrentView("goals")}
+            variant={currentView === "planner" ? "secondary" : "ghost"}
+            className={`w-full justify-start font-normal ${currentView === "planner" ? "bg-accent/10 text-accent" : ""}`}
+            onClick={() => setCurrentView("planner")}
+            title={sidebarCollapsed ? "Planning journalier" : ""}
           >
-            <FolderKanban className="h-5 w-5 mr-3" />
-            Mes projets
-          </Button>
-          <Button
-            variant={currentView === "calendar" ? "secondary" : "ghost"}
-            className={`w-full justify-start font-normal ${currentView === "calendar" ? "bg-accent/10 text-accent" : ""}`}
-            onClick={() => setCurrentView("calendar")}
-          >
-            <CalendarDays className="h-5 w-5 mr-3" />
-            Calendrier
-          </Button>
-          <Button
-            variant={currentView === "agenda" ? "secondary" : "ghost"}
-            className={`w-full justify-start font-normal ${currentView === "agenda" ? "bg-accent/10 text-accent" : ""}`}
-            onClick={() => setCurrentView("agenda")}
-          >
-            <ListTodo className="h-5 w-5 mr-3" />
-            Prochaines étapes
+            <Calendar className={`h-5 w-5 ${sidebarCollapsed ? "" : "mr-3"}`} />
+            {!sidebarCollapsed && "Planning journalier"}
           </Button>
           <Button
             variant={currentView === "trackers" ? "secondary" : "ghost"}
             className={`w-full justify-start font-normal ${currentView === "trackers" ? "bg-accent/10 text-accent" : ""}`}
             onClick={() => setCurrentView("trackers")}
+            title={sidebarCollapsed ? "Mes trackers" : ""}
           >
-            <Activity className="h-5 w-5 mr-3" />
-            Mes trackers
+            <Activity className={`h-5 w-5 ${sidebarCollapsed ? "" : "mr-3"}`} />
+            {!sidebarCollapsed && "Mes trackers"}
           </Button>
           <Button
-            variant={currentView === "planner" ? "secondary" : "ghost"}
-            className={`w-full justify-start font-normal ${currentView === "planner" ? "bg-accent/10 text-accent" : ""}`}
-            onClick={() => setCurrentView("planner")}
+            variant={currentView === "calendar" ? "secondary" : "ghost"}
+            className={`w-full justify-start font-normal ${currentView === "calendar" ? "bg-accent/10 text-accent" : ""}`}
+            onClick={() => setCurrentView("calendar")}
+            title={sidebarCollapsed ? "Calendrier" : ""}
           >
-            <Calendar className="h-5 w-5 mr-3" />
-            Planning journalier
+            <CalendarDays className={`h-5 w-5 ${sidebarCollapsed ? "" : "mr-3"}`} />
+            {!sidebarCollapsed && "Calendrier"}
+          </Button>
+          <Button
+            variant={currentView === "goals" ? "secondary" : "ghost"}
+            className={`w-full justify-start font-normal ${currentView === "goals" ? "bg-accent/10 text-accent" : ""}`}
+            onClick={() => setCurrentView("goals")}
+            title={sidebarCollapsed ? "Mes projets" : ""}
+          >
+            <FolderKanban className={`h-5 w-5 ${sidebarCollapsed ? "" : "mr-3"}`} />
+            {!sidebarCollapsed && "Mes projets"}
+          </Button>
+          <Button
+            variant={currentView === "agenda" ? "secondary" : "ghost"}
+            className={`w-full justify-start font-normal ${currentView === "agenda" ? "bg-accent/10 text-accent" : ""}`}
+            onClick={() => setCurrentView("agenda")}
+            title={sidebarCollapsed ? "Prochaines étapes" : ""}
+          >
+            <ListTodo className={`h-5 w-5 ${sidebarCollapsed ? "" : "mr-3"}`} />
+            {!sidebarCollapsed && "Prochaines étapes"}
           </Button>
         </nav>
-
-        {/* Bouton nouveau projet */}
-        <div className="p-4 border-t border-border">
-          <Button
-            className="w-full font-normal"
-            onClick={() => router.push("/nouveau-projet")}
-          >
-            <Plus className="h-5 w-5 mr-2" />
-            Nouveau projet
-          </Button>
-        </div>
       </aside>
 
       {/* Contenu principal */}

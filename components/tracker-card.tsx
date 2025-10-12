@@ -70,104 +70,76 @@ export function TrackerCard({ tracker, onComplete, onClick, onDelete, isComplete
 
   return (
     <>
-      <Card
+      <div
         className={cn(
-          "p-6 border-border/50 bg-card/50 backdrop-blur-sm hover:border-accent/50 transition-all cursor-pointer group",
+          "flex items-center gap-4 p-3 rounded-lg border border-border hover:border-accent/50 transition-all cursor-pointer group",
           isCompletedToday && "border-accent/30 bg-accent/5"
         )}
         onClick={onClick}
       >
-        <div className="space-y-4">
-          {/* En-tête avec titre et boutons d'action */}
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 space-y-1">
-              <h4 className="font-light text-lg leading-tight group-hover:text-accent transition-colors">
-                {tracker.title}
-              </h4>
-              {tracker.description && (
-                <p className="text-sm text-muted-foreground font-light line-clamp-2">{tracker.description}</p>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <Button
-                size="icon"
-                variant={isCompletedToday ? "default" : "outline"}
-                className={cn(
-                  "rounded-full",
-                  isCompletedToday && "bg-accent text-accent-foreground hover:bg-accent/90"
-                )}
-                onClick={handleComplete}
-                disabled={isCompletedToday || isCompleting}
-              >
-                <Check className={cn("h-4 w-4", isCompletedToday && "animate-in zoom-in duration-300")} />
-              </Button>
-
-              {onDelete && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                    <Button size="icon" variant="ghost" className="rounded-full">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      className="text-destructive focus:text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setShowDeleteDialog(true)
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Supprimer
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </div>
-          </div>
-
-        {/* Statistiques */}
-        <div className="flex items-center gap-6 text-sm">
-          {/* Streak actuel */}
-          <div className="flex items-center gap-2">
-            <Flame className={cn("h-4 w-4", tracker.current_streak > 0 ? "text-orange-500" : "text-muted-foreground")} />
-            <div className="space-y-0.5">
-              <p className="text-muted-foreground font-light text-xs">Série actuelle</p>
-              <p className="font-light">{tracker.current_streak} jours</p>
-            </div>
-          </div>
-
-          {/* Meilleur streak */}
-          <div className="flex items-center gap-2">
-            <div className="space-y-0.5">
-              <p className="text-muted-foreground font-light text-xs">Meilleure série</p>
-              <p className="font-light">{tracker.best_streak} jours</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Informations supplémentaires */}
-        <div className="flex items-center justify-between text-sm text-muted-foreground font-light">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-3 w-3" />
-            <span>{getFrequencyText()}</span>
-          </div>
-
-          {tracker.category && (
-            <span className="text-xs px-2 py-1 rounded-full bg-accent/10 text-accent">{tracker.category}</span>
+        {/* Bouton de complétion */}
+        <Button
+          size="icon"
+          variant={isCompletedToday ? "default" : "outline"}
+          className={cn(
+            "rounded-full h-9 w-9 shrink-0",
+            isCompletedToday && "bg-accent text-accent-foreground hover:bg-accent/90"
           )}
-        </div>
+          onClick={handleComplete}
+          disabled={isCompletedToday || isCompleting}
+        >
+          <Check className={cn("h-4 w-4", isCompletedToday && "animate-in zoom-in duration-300")} />
+        </Button>
 
-        {/* Barre de progression visuelle des complétions totales */}
-        <div className="pt-2 border-t border-border/50">
-          <div className="flex items-center justify-between text-xs text-muted-foreground font-light">
-            <span>Complétions totales</span>
-            <span className="font-medium">{tracker.total_completions}</span>
+        {/* Contenu principal */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <h4 className="font-medium text-sm leading-tight group-hover:text-accent transition-colors truncate">
+              {tracker.title}
+            </h4>
+            {tracker.category && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-accent/10 text-accent shrink-0">{tracker.category}</span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <Flame className={cn("h-3 w-3", tracker.current_streak > 0 ? "text-orange-500" : "text-muted-foreground")} />
+              <span>{tracker.current_streak}</span>
+            </div>
+            <span>•</span>
+            <div className="flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              <span>{getFrequencyText()}</span>
+            </div>
+            <span>•</span>
+            <span>{tracker.total_completions} fois</span>
           </div>
         </div>
+
+        {/* Menu d'actions */}
+        {onDelete && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+              <Button size="icon" variant="ghost" className="rounded-full h-8 w-8 shrink-0">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowDeleteDialog(true)
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Supprimer
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
-    </Card>
 
     {/* Dialog de confirmation de suppression */}
     <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

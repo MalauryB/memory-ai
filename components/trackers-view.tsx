@@ -129,39 +129,28 @@ export function TrackersView() {
       </div>
 
       {/* Statistiques du jour */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl">
-        <div className="p-6 border border-border rounded-lg bg-card/50 backdrop-blur-sm">
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground font-normal">Complétés aujourd'hui</p>
-            <p className="text-3xl font-semibold">
-              {totalCompletionsToday}/{totalActiveTrackers}
-            </p>
-          </div>
+      <div className="flex items-center gap-6 text-sm">
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground font-normal">Complétés aujourd'hui:</span>
+          <span className="font-medium">
+            {totalCompletionsToday}/{totalActiveTrackers}
+          </span>
         </div>
-
-        <div className="p-6 border border-border rounded-lg bg-card/50 backdrop-blur-sm">
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground font-normal">Taux de complétion</p>
-            <p className="text-3xl font-semibold">
-              {completionRate}
-              <span className="text-lg text-muted-foreground">%</span>
-            </p>
-          </div>
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground font-normal">Taux de complétion:</span>
+          <span className="font-medium">{completionRate}%</span>
         </div>
-
-        <div className="p-6 border border-border rounded-lg bg-card/50 backdrop-blur-sm">
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground font-normal">Série la plus longue</p>
-            <p className="text-3xl font-semibold">{Math.max(...activeTrackers.map((t) => t.best_streak), 0)}</p>
-          </div>
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground font-normal">Meilleure série:</span>
+          <span className="font-medium">{Math.max(...activeTrackers.map((t) => t.best_streak), 0)}</span>
         </div>
       </div>
 
       {/* Liste des trackers à faire aujourd'hui */}
       {todayTrackers.length > 0 && (
-        <section className="space-y-4">
-          <h3 className="text-xl font-medium tracking-tight">À faire aujourd'hui</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <section className="space-y-3">
+          <h3 className="text-lg font-medium tracking-tight">À faire aujourd'hui</h3>
+          <div className="space-y-2">
             {todayTrackers.map((tracker) => (
               <TrackerCard
                 key={tracker.id}
@@ -177,9 +166,9 @@ export function TrackersView() {
 
       {/* Liste des trackers complétés aujourd'hui */}
       {completedTrackers.length > 0 && (
-        <section className="space-y-4">
-          <h3 className="text-xl font-medium tracking-tight text-muted-foreground">Complétés aujourd'hui</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <section className="space-y-3">
+          <h3 className="text-lg font-medium tracking-tight text-muted-foreground">Complétés aujourd'hui</h3>
+          <div className="space-y-2">
             {completedTrackers.map((tracker) => (
               <TrackerCard
                 key={tracker.id}
