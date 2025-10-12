@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
+import { createClientFromRequest } from "@/lib/supabase-server"
+import { getUserContext, formatUserContextForAI, getUserRecommendations } from "@/lib/user-context"
 
 const USE_MOCK = process.env.USE_MOCK_AI === "true"
 
@@ -41,6 +43,13 @@ const mockSubsteps = [
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = createClientFromRequest(request)
+
+    // Récupérer l'utilisateur
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
     const { stepTitle, stepDescription, projectTitle, projectCategory } = await request.json()
 
     if (USE_MOCK) {
@@ -56,8 +65,20 @@ export async function POST(request: NextRequest) {
 
     const anthropic = new Anthropic({ apiKey })
 
-    const prompt = `Tu es un assistant expert en décomposition de tâches et planification de projets.
+    // Récupérer le contexte utilisateur
+    let userContextText = ""
+    if (user) {
+      const context = await getUserContext(supabase, user.id)
+      const formattedContext = formatUserContextForAI(context)
+      const recommendations = getUserRecommendations(context)
 
+      if (formattedContext) {
+        userContextText = `\n📋 CONTEXTE UTILISATEUR :\n${formattedContext}${recommendations}\n\n⚡ IMPORTANT : Adapte les sous-étapes selon les disponibilités, routines et contraintes de l'utilisateur.\n`
+      }
+    }
+
+    const prompt = `Tu es un assistant expert en décomposition de tâches et planification de projets.
+${userContextText}
 Projet : ${projectTitle}
 Catégorie : ${projectCategory}
 Étape à décomposer : ${stepTitle}

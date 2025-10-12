@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClientFromRequest } from "@/lib/supabase-server"
+import { getUserContext, formatUserContextForAI, getUserRecommendations } from "@/lib/user-context"
 
 interface PlanningConfig {
   intensity: 'light' | 'moderate' | 'intense'
@@ -539,6 +540,11 @@ async function generateIntelligentDailyPlan(config: {
   // 6. Suggérer une activité relaxante via IA (si API key disponible)
   if (anthropicApiKey && dailyPlan.length > 3) {
     try {
+      // Récupérer l'ID utilisateur depuis le contexte de génération
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
       const suggestion = await generateRelaxationSuggestion({
         anthropicApiKey,
         userCity,
@@ -554,7 +560,8 @@ async function generateIntelligentDailyPlan(config: {
         })),
         currentHour,
         currentMinute,
-        supabase
+        supabase,
+        userId: user?.id
       })
 
       if (suggestion) {
@@ -679,8 +686,9 @@ async function generateRelaxationSuggestion(params: {
   currentHour: number
   currentMinute: number
   supabase: any
+  userId?: string
 }): Promise<DailyPlanTask | null> {
-  const { anthropicApiKey, userCity, planSummary, customActivities, currentHour, currentMinute, supabase } = params
+  const { anthropicApiKey, userCity, planSummary, customActivities, currentHour, currentMinute, supabase, userId } = params
 
   // Récupérer quelques lieux intéressants
   const { data: locations } = await supabase
@@ -689,8 +697,20 @@ async function generateRelaxationSuggestion(params: {
     .eq("city", userCity)
     .limit(5)
 
-  const prompt = `Tu es un assistant de bien-être. Analyse ce planning de journée et suggère UNE activité relaxante adaptée.
+  // Récupérer le contexte utilisateur
+  let userContextText = ""
+  if (userId) {
+    const context = await getUserContext(supabase, userId)
+    const formattedContext = formatUserContextForAI(context)
+    const recommendations = getUserRecommendations(context)
 
+    if (formattedContext) {
+      userContextText = `\n📋 CONTEXTE UTILISATEUR :\n${formattedContext}${recommendations}\n\n⚡ IMPORTANT : Suggère une activité adaptée au profil, aux préférences et aux horaires de l'utilisateur.\n`
+    }
+  }
+
+  const prompt = `Tu es un assistant de bien-être. Analyse ce planning de journée et suggère UNE activité relaxante adaptée.
+${userContextText}
 Planning actuel:
 ${planSummary.map(t => `- ${t.title} (${t.category}) - ${t.duration}`).join('\n')}
 

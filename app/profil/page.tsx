@@ -8,16 +8,25 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { ArrowLeft, Loader2, Save, User, MapPin, Clock, Bell, Calendar } from "lucide-react"
+import { ArrowLeft, Loader2, Save, User, MapPin, Clock, Bell, Calendar, Plus, Trash2, Ban, Shield } from "lucide-react"
 import { getUser } from "@/lib/auth"
+import { useToast } from "@/hooks/use-toast"
 
 interface UserProfile {
   user_id?: string
   full_name: string
   bio: string
   avatar_url: string
+  birth_date: string
+  gender: string
   location: string
   timezone: string
+  wake_up_time: string
+  sleep_time: string
+  morning_routine: string
+  morning_routine_duration: number
+  night_routine: string
+  night_routine_duration: number
   work_hours_start: string
   work_hours_end: string
   preferred_work_days: number[]
@@ -27,14 +36,23 @@ interface UserProfile {
 }
 
 const DAYS_OF_WEEK = [
-  { value: 1, label: "Lundi" },
-  { value: 2, label: "Mardi" },
-  { value: 3, label: "Mercredi" },
-  { value: 4, label: "Jeudi" },
-  { value: 5, label: "Vendredi" },
-  { value: 6, label: "Samedi" },
-  { value: 0, label: "Dimanche" },
+  { value: 1, label: "Lundi", short: "Lun" },
+  { value: 2, label: "Mardi", short: "Mar" },
+  { value: 3, label: "Mercredi", short: "Mer" },
+  { value: 4, label: "Jeudi", short: "Jeu" },
+  { value: 5, label: "Vendredi", short: "Ven" },
+  { value: 6, label: "Samedi", short: "Sam" },
+  { value: 0, label: "Dimanche", short: "Dim" },
 ]
+
+interface BlockedTimeSlot {
+  id: string
+  title: string
+  description: string
+  start_time: string
+  end_time: string
+  days_of_week: number[]
+}
 
 const TIMEZONES = [
   { value: "Europe/Paris", label: "Paris (UTC+1)" },
@@ -44,16 +62,42 @@ const TIMEZONES = [
   { value: "Asia/Tokyo", label: "Tokyo (UTC+9)" },
 ]
 
+const GENDERS = [
+  { value: "male", label: "Homme" },
+  { value: "female", label: "Femme" },
+  { value: "non_binary", label: "Non-binaire" },
+  { value: "other", label: "Autre" },
+  { value: "prefer_not_to_say", label: "Je préfère ne pas répondre" },
+]
+
 export default function ProfilePage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [blockedSlots, setBlockedSlots] = useState<BlockedTimeSlot[]>([])
+  const [showNewSlotForm, setShowNewSlotForm] = useState(false)
+  const [newSlot, setNewSlot] = useState({
+    title: "",
+    description: "",
+    start_time: "12:00",
+    end_time: "13:00",
+    days_of_week: [] as number[],
+  })
   const [profile, setProfile] = useState<UserProfile>({
     full_name: "",
     bio: "",
     avatar_url: "",
+    birth_date: "",
+    gender: "",
     location: "",
     timezone: "Europe/Paris",
+    wake_up_time: "07:00",
+    sleep_time: "23:00",
+    morning_routine: "",
+    morning_routine_duration: 30,
+    night_routine: "",
+    night_routine_duration: 30,
     work_hours_start: "09:00",
     work_hours_end: "18:00",
     preferred_work_days: [1, 2, 3, 4, 5],
@@ -72,7 +116,7 @@ export default function ProfilePage() {
       router.push("/auth")
       return
     }
-    await fetchProfile()
+    await Promise.all([fetchProfile(), fetchBlockedSlots()])
   }
 
   async function fetchProfile() {
@@ -83,9 +127,20 @@ export default function ProfilePage() {
         // Convertir les heures de format HH:MM:SS à HH:MM
         const profileData = {
           ...data.profile,
+          birth_date: data.profile.birth_date || "",
+          gender: data.profile.gender || "",
+          wake_up_time: data.profile.wake_up_time?.substring(0, 5) || "07:00",
+          sleep_time: data.profile.sleep_time?.substring(0, 5) || "23:00",
           work_hours_start: data.profile.work_hours_start?.substring(0, 5) || "09:00",
           work_hours_end: data.profile.work_hours_end?.substring(0, 5) || "18:00",
           notification_time: data.profile.notification_time?.substring(0, 5) || "09:00",
+          preferred_work_days: data.profile.preferred_work_days || [1, 2, 3, 4, 5],
+          morning_routine: data.profile.morning_routine || "",
+          night_routine: data.profile.night_routine || "",
+          morning_routine_duration: data.profile.morning_routine_duration || 30,
+          night_routine_duration: data.profile.night_routine_duration || 30,
+          daily_work_hours: data.profile.daily_work_hours || 8,
+          notification_enabled: data.profile.notification_enabled !== undefined ? data.profile.notification_enabled : true,
         }
         setProfile(profileData)
       }
@@ -106,6 +161,8 @@ export default function ProfilePage() {
         },
         body: JSON.stringify({
           ...profile,
+          wake_up_time: profile.wake_up_time + ":00",
+          sleep_time: profile.sleep_time + ":00",
           work_hours_start: profile.work_hours_start + ":00",
           work_hours_end: profile.work_hours_end + ":00",
           notification_time: profile.notification_time + ":00",
@@ -115,30 +172,142 @@ export default function ProfilePage() {
       const data = await response.json()
 
       if (response.ok) {
-        alert("Profil sauvegardé avec succès !")
-        router.back()
+        toast({
+          title: "Profil sauvegardé",
+          description: "Vos modifications ont été enregistrées avec succès.",
+        })
       } else {
         console.error("Erreur serveur:", data)
-        alert(`Erreur lors de la sauvegarde: ${data.error || "Erreur inconnue"}`)
+        toast({
+          title: "Erreur",
+          description: `Erreur lors de la sauvegarde: ${data.error || "Erreur inconnue"}`,
+          variant: "destructive",
+        })
       }
     } catch (error) {
       console.error("Erreur:", error)
-      alert("Erreur lors de la sauvegarde: " + (error as Error).message)
+      toast({
+        title: "Erreur",
+        description: "Erreur lors de la sauvegarde: " + (error as Error).message,
+        variant: "destructive",
+      })
     } finally {
       setSaving(false)
     }
   }
 
+  async function fetchBlockedSlots() {
+    try {
+      const response = await fetch("/api/blocked-time-slots")
+      if (response.ok) {
+        const data = await response.json()
+        // Convertir les heures au format HH:MM
+        const slotsWithFormattedTime = data.slots.map((slot: BlockedTimeSlot) => ({
+          ...slot,
+          start_time: slot.start_time.substring(0, 5),
+          end_time: slot.end_time.substring(0, 5),
+        }))
+        setBlockedSlots(slotsWithFormattedTime)
+      }
+    } catch (error) {
+      console.error("Erreur:", error)
+    }
+  }
+
+  async function addBlockedSlot() {
+    if (!newSlot.title || newSlot.days_of_week.length === 0) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez renseigner un titre et au moins un jour",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      const response = await fetch("/api/blocked-time-slots", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...newSlot,
+          start_time: newSlot.start_time + ":00",
+          end_time: newSlot.end_time + ":00",
+        }),
+      })
+
+      if (response.ok) {
+        await fetchBlockedSlots()
+        setShowNewSlotForm(false)
+        setNewSlot({
+          title: "",
+          description: "",
+          start_time: "12:00",
+          end_time: "13:00",
+          days_of_week: [],
+        })
+        toast({
+          title: "Créneau ajouté",
+          description: "Le créneau bloqué a été ajouté avec succès.",
+        })
+      }
+    } catch (error) {
+      console.error("Erreur:", error)
+      toast({
+        title: "Erreur",
+        description: "Erreur lors de l'ajout du créneau",
+        variant: "destructive",
+      })
+    }
+  }
+
+  async function deleteBlockedSlot(id: string) {
+    try {
+      const response = await fetch(`/api/blocked-time-slots/${id}`, {
+        method: "DELETE",
+      })
+
+      if (response.ok) {
+        setBlockedSlots(blockedSlots.filter((slot) => slot.id !== id))
+        toast({
+          title: "Créneau supprimé",
+          description: "Le créneau bloqué a été supprimé avec succès.",
+        })
+      }
+    } catch (error) {
+      console.error("Erreur:", error)
+      toast({
+        title: "Erreur",
+        description: "Erreur lors de la suppression",
+        variant: "destructive",
+      })
+    }
+  }
+
   const toggleWorkDay = (day: number) => {
-    if (profile.preferred_work_days.includes(day)) {
+    const workDays = profile.preferred_work_days || []
+    if (workDays.includes(day)) {
       setProfile({
         ...profile,
-        preferred_work_days: profile.preferred_work_days.filter((d) => d !== day),
+        preferred_work_days: workDays.filter((d) => d !== day),
       })
     } else {
       setProfile({
         ...profile,
-        preferred_work_days: [...profile.preferred_work_days, day].sort(),
+        preferred_work_days: [...workDays, day].sort(),
+      })
+    }
+  }
+
+  const toggleNewSlotDay = (day: number) => {
+    if (newSlot.days_of_week.includes(day)) {
+      setNewSlot({
+        ...newSlot,
+        days_of_week: newSlot.days_of_week.filter((d) => d !== day),
+      })
+    } else {
+      setNewSlot({
+        ...newSlot,
+        days_of_week: [...newSlot.days_of_week, day].sort(),
       })
     }
   }
@@ -207,6 +376,39 @@ export default function ProfilePage() {
                 />
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="birth_date" className="font-light">
+                    Date de naissance
+                  </Label>
+                  <Input
+                    id="birth_date"
+                    type="date"
+                    value={profile.birth_date}
+                    onChange={(e) => setProfile({ ...profile, birth_date: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="gender" className="font-light">
+                    Genre
+                  </Label>
+                  <select
+                    id="gender"
+                    value={profile.gender}
+                    onChange={(e) => setProfile({ ...profile, gender: e.target.value })}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="">Sélectionnez...</option>
+                    {GENDERS.map((gender) => (
+                      <option key={gender.value} value={gender.value}>
+                        {gender.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="bio" className="font-light">
                   Bio
@@ -251,6 +453,128 @@ export default function ProfilePage() {
                       </option>
                     ))}
                   </select>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Horaires de sommeil et routines */}
+          <Card className="p-6 border-border/50 bg-card/50 backdrop-blur-sm space-y-6">
+            <div className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-muted-foreground" />
+              <h3 className="text-xl font-light">Rythme quotidien & Routines</h3>
+            </div>
+
+            <div className="space-y-6">
+              {/* Horaires */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium text-muted-foreground">Horaires</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="wake_up_time" className="font-light">
+                      Heure de lever
+                    </Label>
+                    <Input
+                      id="wake_up_time"
+                      type="time"
+                      value={profile.wake_up_time}
+                      onChange={(e) => setProfile({ ...profile, wake_up_time: e.target.value })}
+                    />
+                    <p className="text-xs text-muted-foreground font-light">
+                      Aucune tâche ne sera planifiée avant cette heure
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="sleep_time" className="font-light">
+                      Heure de coucher
+                    </Label>
+                    <Input
+                      id="sleep_time"
+                      type="time"
+                      value={profile.sleep_time}
+                      onChange={(e) => setProfile({ ...profile, sleep_time: e.target.value })}
+                    />
+                    <p className="text-xs text-muted-foreground font-light">
+                      Aucune tâche ne sera planifiée après cette heure
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Routine du matin */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium text-muted-foreground">Routine matinale</h4>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="morning_routine" className="font-light">
+                      Description de votre routine matinale
+                    </Label>
+                    <Textarea
+                      id="morning_routine"
+                      value={profile.morning_routine}
+                      onChange={(e) => setProfile({ ...profile, morning_routine: e.target.value })}
+                      placeholder="Ex: Méditation 10min, douche, petit-déjeuner, lecture..."
+                      className="min-h-[80px] resize-none"
+                    />
+                    <p className="text-xs text-muted-foreground font-light">
+                      Décrivez les activités que vous faites chaque matin. L'IA pourra mieux organiser votre planning.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="morning_routine_duration" className="font-light">
+                      Durée totale (minutes)
+                    </Label>
+                    <Input
+                      id="morning_routine_duration"
+                      type="number"
+                      min="0"
+                      max="300"
+                      value={profile.morning_routine_duration}
+                      onChange={(e) =>
+                        setProfile({ ...profile, morning_routine_duration: parseInt(e.target.value) || 30 })
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Routine du soir */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium text-muted-foreground">Routine du soir</h4>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="night_routine" className="font-light">
+                      Description de votre routine du soir
+                    </Label>
+                    <Textarea
+                      id="night_routine"
+                      value={profile.night_routine}
+                      onChange={(e) => setProfile({ ...profile, night_routine: e.target.value })}
+                      placeholder="Ex: Dîner, rangement, lecture, skincare, préparation du lendemain..."
+                      className="min-h-[80px] resize-none"
+                    />
+                    <p className="text-xs text-muted-foreground font-light">
+                      Décrivez les activités que vous faites chaque soir avant de dormir.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="night_routine_duration" className="font-light">
+                      Durée totale (minutes)
+                    </Label>
+                    <Input
+                      id="night_routine_duration"
+                      type="number"
+                      min="0"
+                      max="300"
+                      value={profile.night_routine_duration}
+                      onChange={(e) =>
+                        setProfile({ ...profile, night_routine_duration: parseInt(e.target.value) || 30 })
+                      }
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -313,7 +637,7 @@ export default function ProfilePage() {
                     <Button
                       key={day.value}
                       type="button"
-                      variant={profile.preferred_work_days.includes(day.value) ? "default" : "outline"}
+                      variant={profile.preferred_work_days?.includes(day.value) ? "default" : "outline"}
                       size="sm"
                       onClick={() => toggleWorkDay(day.value)}
                       className="font-light"
@@ -324,6 +648,168 @@ export default function ProfilePage() {
                 </div>
               </div>
             </div>
+          </Card>
+
+          {/* Créneaux bloqués */}
+          <Card className="p-6 border-border/50 bg-card/50 backdrop-blur-sm space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Ban className="h-5 w-5 text-muted-foreground" />
+                <h3 className="text-xl font-light">Créneaux horaires bloqués</h3>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowNewSlotForm(!showNewSlotForm)}
+                className="font-light"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Ajouter
+              </Button>
+            </div>
+
+            <p className="text-sm text-muted-foreground font-light">
+              Définissez des créneaux récurrents où vous ne voulez pas de tâches planifiées (cours, rendez-vous réguliers, temps famille, etc.)
+            </p>
+
+            {/* Formulaire d'ajout */}
+            {showNewSlotForm && (
+              <Card className="p-4 border-accent/30 bg-accent/5">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="slot_title" className="font-light">
+                      Titre *
+                    </Label>
+                    <Input
+                      id="slot_title"
+                      value={newSlot.title}
+                      onChange={(e) => setNewSlot({ ...newSlot, title: e.target.value })}
+                      placeholder="Ex: Cours de yoga, Déjeuner famille..."
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="slot_description" className="font-light">
+                      Description
+                    </Label>
+                    <Textarea
+                      id="slot_description"
+                      value={newSlot.description}
+                      onChange={(e) => setNewSlot({ ...newSlot, description: e.target.value })}
+                      placeholder="Description optionnelle..."
+                      className="min-h-[60px] resize-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="slot_start" className="font-light">
+                        Heure de début
+                      </Label>
+                      <Input
+                        id="slot_start"
+                        type="time"
+                        value={newSlot.start_time}
+                        onChange={(e) => setNewSlot({ ...newSlot, start_time: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="slot_end" className="font-light">
+                        Heure de fin
+                      </Label>
+                      <Input
+                        id="slot_end"
+                        type="time"
+                        value={newSlot.end_time}
+                        onChange={(e) => setNewSlot({ ...newSlot, end_time: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="font-light">Jours de la semaine *</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {DAYS_OF_WEEK.map((day) => (
+                        <Button
+                          key={day.value}
+                          type="button"
+                          variant={newSlot.days_of_week.includes(day.value) ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => toggleNewSlotDay(day.value)}
+                          className="font-light"
+                        >
+                          {day.short}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button onClick={addBlockedSlot} size="sm" className="font-light">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Ajouter le créneau
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowNewSlotForm(false)}
+                      className="font-light"
+                    >
+                      Annuler
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            {/* Liste des créneaux */}
+            {blockedSlots.length > 0 ? (
+              <div className="space-y-2">
+                {blockedSlots.map((slot) => (
+                  <Card key={slot.id} className="p-4 border-border/30 bg-background/50">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium">{slot.title}</h4>
+                          <span className="text-sm text-muted-foreground font-mono">
+                            {slot.start_time} - {slot.end_time}
+                          </span>
+                        </div>
+                        {slot.description && (
+                          <p className="text-sm text-muted-foreground font-light">{slot.description}</p>
+                        )}
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {slot.days_of_week.sort().map((dayValue) => {
+                            const day = DAYS_OF_WEEK.find((d) => d.value === dayValue)
+                            return (
+                              <span
+                                key={dayValue}
+                                className="px-2 py-0.5 text-xs rounded-full bg-accent/10 text-accent font-normal"
+                              >
+                                {day?.short}
+                              </span>
+                            )
+                          })}
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => deleteBlockedSlot(slot.id)}
+                        className="flex-shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground font-light text-center py-8">
+                Aucun créneau bloqué pour le moment
+              </p>
+            )}
           </Card>
 
           {/* Notifications */}
@@ -369,6 +855,29 @@ export default function ProfilePage() {
                   />
                 </div>
               )}
+            </div>
+          </Card>
+
+          {/* Données et confidentialité */}
+          <Card className="p-6 border-border/50 bg-card/50 backdrop-blur-sm space-y-6">
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-muted-foreground" />
+              <h3 className="text-xl font-light">Données et confidentialité</h3>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground font-light">
+                Consultez vos droits RGPD, exportez vos données ou supprimez définitivement votre compte et toutes vos informations.
+              </p>
+
+              <Button
+                variant="outline"
+                className="font-light w-full sm:w-auto"
+                onClick={() => router.push("/donnees")}
+              >
+                <Shield className="h-4 w-4 mr-2" />
+                Gérer mes données
+              </Button>
             </div>
           </Card>
         </div>

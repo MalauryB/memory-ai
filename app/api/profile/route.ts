@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const { data: profile, error } = await supabase
       .from("user_profiles")
       .select("*")
-      .eq("user_id", user?.id || "")
+      .eq("id", user?.id || "")
       .single()
 
     if (error && error.code !== "PGRST116") {
@@ -33,18 +33,11 @@ export async function GET(request: NextRequest) {
     if (!profile) {
       return NextResponse.json({
         profile: {
-          user_id: user?.id,
+          id: user?.id,
           full_name: "",
           bio: "",
           avatar_url: "",
-          location: "",
           timezone: "Europe/Paris",
-          work_hours_start: "09:00:00",
-          work_hours_end: "18:00:00",
-          preferred_work_days: [1, 2, 3, 4, 5],
-          daily_work_hours: 8,
-          notification_enabled: true,
-          notification_time: "09:00:00",
         },
       })
     }
@@ -76,29 +69,52 @@ export async function POST(request: NextRequest) {
     const { data: existingProfile } = await supabase
       .from("user_profiles")
       .select("id")
-      .eq("user_id", user?.id || "")
+      .eq("id", user?.id || "")
       .single()
 
     let result
+
+    // Préparer les données de base qui existent toujours
+    const baseData: Record<string, unknown> = {
+      full_name: body.full_name,
+      bio: body.bio,
+      avatar_url: body.avatar_url,
+      timezone: body.timezone,
+    }
+
+    // Ajouter les champs optionnels seulement s'ils sont présents dans le body
+    const optionalFields = [
+      'birth_date',
+      'gender',
+      'wake_up_time',
+      'sleep_time',
+      'morning_routine',
+      'morning_routine_duration',
+      'night_routine',
+      'night_routine_duration',
+      'work_hours_start',
+      'work_hours_end',
+      'preferred_work_days',
+      'daily_work_hours',
+      'notification_enabled',
+      'notification_time',
+      'location'
+    ]
+
+    // Vérifier quels champs existent en testant un SELECT sur le profil existant
+    // On n'inclut que les champs qui existent dans la table
+    for (const field of optionalFields) {
+      if (body[field] !== undefined) {
+        baseData[field] = body[field]
+      }
+    }
 
     if (existingProfile) {
       // Mettre à jour le profil existant
       result = await supabase
         .from("user_profiles")
-        .update({
-          full_name: body.full_name,
-          bio: body.bio,
-          avatar_url: body.avatar_url,
-          location: body.location,
-          timezone: body.timezone,
-          work_hours_start: body.work_hours_start,
-          work_hours_end: body.work_hours_end,
-          preferred_work_days: body.preferred_work_days,
-          daily_work_hours: body.daily_work_hours,
-          notification_enabled: body.notification_enabled,
-          notification_time: body.notification_time,
-        })
-        .eq("user_id", user?.id || "")
+        .update(baseData)
+        .eq("id", user?.id || "")
         .select()
         .single()
     } else {
@@ -106,18 +122,8 @@ export async function POST(request: NextRequest) {
       result = await supabase
         .from("user_profiles")
         .insert({
-          user_id: user?.id,
-          full_name: body.full_name,
-          bio: body.bio,
-          avatar_url: body.avatar_url,
-          location: body.location,
-          timezone: body.timezone,
-          work_hours_start: body.work_hours_start,
-          work_hours_end: body.work_hours_end,
-          preferred_work_days: body.preferred_work_days,
-          daily_work_hours: body.daily_work_hours,
-          notification_enabled: body.notification_enabled,
-          notification_time: body.notification_time,
+          id: user?.id,
+          ...baseData
         })
         .select()
         .single()

@@ -142,12 +142,12 @@ export function DailyPlanner() {
   }
 
   return (
-    <div className="space-y-12 max-w-4xl mx-auto">
-      <div className="space-y-4">
+    <div className="space-y-6 max-w-4xl mx-auto">
+      <div className="space-y-2">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-4xl font-semibold tracking-tight text-balance">Planning du jour</h2>
-            <p className="text-lg text-muted-foreground font-normal leading-relaxed mt-2">
+            <h2 className="text-2xl font-semibold tracking-tight text-balance">Planning du jour</h2>
+            <p className="text-sm text-muted-foreground font-normal leading-relaxed mt-1">
               Aujourd'hui, {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
             </p>
           </div>
@@ -157,21 +157,21 @@ export function DailyPlanner() {
         </div>
 
         {tasks.length > 0 && (
-          <p className="text-sm text-muted-foreground font-medium">
+          <p className="text-xs text-muted-foreground font-medium">
             {tasks.filter(t => t.completed).length} / {tasks.length} tâches terminées
           </p>
         )}
       </div>
 
       {tasks.length === 0 ? (
-        <Card className="p-12 border-border bg-card/50 backdrop-blur-sm">
-          <div className="text-center space-y-6">
+        <Card className="p-8 border-border bg-card/50 backdrop-blur-sm">
+          <div className="text-center space-y-4">
             <div className="flex justify-center">
-              <Sparkles className="h-16 w-16 text-accent" />
+              <Sparkles className="h-12 w-12 text-accent" />
             </div>
-            <div className="space-y-2">
-              <h3 className="text-xl font-medium">Prêt à planifier votre journée ?</h3>
-              <p className="text-sm text-muted-foreground font-normal max-w-md mx-auto">
+            <div className="space-y-1">
+              <h3 className="text-lg font-medium">Prêt à planifier votre journée ?</h3>
+              <p className="text-xs text-muted-foreground font-normal max-w-md mx-auto">
                 Générez un planning intelligent adapté à vos projets et votre niveau d'énergie.
               </p>
             </div>
@@ -179,7 +179,7 @@ export function DailyPlanner() {
           </div>
         </Card>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {tasks.map((task) => {
             const isBreak = task.itemType === 'break'
             const isSuggestion = task.isSuggested
@@ -188,7 +188,7 @@ export function DailyPlanner() {
             return (
               <div key={task.id} className="relative group">
                 <Card
-                  className={`p-6 border backdrop-blur-sm transition-all ${
+                  className={`p-3 border backdrop-blur-sm transition-all ${
                     isBreak ? "bg-accent/5 border-accent/30" :
                     isSuggestion ? "bg-purple-500/5 border-purple-500/30" :
                     isCustomActivity ? "bg-accent/5 border-accent/30" :
@@ -197,54 +197,54 @@ export function DailyPlanner() {
                     task.completed ? "opacity-50" : "hover:border-accent/50"
                   }`}
                 >
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-start gap-3">
                   {!isBreak && (
                     <Checkbox
                       checked={task.completed || false}
                       onCheckedChange={() => toggleTaskCompletion(task.id)}
-                      className="rounded-full mt-1"
+                      className="rounded-full mt-0.5"
                     />
                   )}
                   {isBreak && (
-                    <div className="flex items-center justify-center w-5 h-5 mt-1">
-                      <Coffee className="h-4 w-4 text-accent" />
+                    <div className="flex items-center justify-center w-4 h-4 mt-0.5">
+                      <Coffee className="h-3.5 w-3.5 text-accent" />
                     </div>
                   )}
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="space-y-1 flex-1">
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-0.5 flex-1">
                         <div className="flex items-center gap-2">
-                          <p className={`font-medium text-lg ${task.completed ? "line-through text-muted-foreground" : ""}`}>
+                          <p className={`font-medium text-sm ${task.completed ? "line-through text-muted-foreground" : ""}`}>
                             {task.title}
                           </p>
                           {isSuggestion && (
-                            <Badge variant="secondary" className="font-normal text-xs">
-                              <Lightbulb className="h-3 w-3 mr-1" />
+                            <Badge variant="secondary" className="font-normal text-[10px] py-0 h-4">
+                              <Lightbulb className="h-2.5 w-2.5 mr-0.5" />
                               Suggestion IA
                             </Badge>
                           )}
                         </div>
                         {task.description && (
-                          <p className="text-sm text-muted-foreground font-normal">
+                          <p className="text-xs text-muted-foreground font-normal">
                             {task.description}
                           </p>
                         )}
                         {task.location && (
-                          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                            <MapPin className="h-3 w-3" />
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <MapPin className="h-2.5 w-2.5" />
                             <span className="font-normal">{task.location.name}</span>
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 text-muted-foreground flex-shrink-0">
-                        <Clock className="h-4 w-4" />
-                        <span className="text-sm font-medium font-mono">{task.scheduledTime}</span>
+                      <div className="flex items-center gap-1.5 text-muted-foreground flex-shrink-0">
+                        <Clock className="h-3 w-3" />
+                        <span className="text-xs font-medium font-mono">{task.scheduledTime}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 text-xs flex-wrap">
+                    <div className="flex items-center gap-3 text-[10px] flex-wrap">
                       {task.projectTitle && (
-                        <div className="flex items-center gap-1.5 text-muted-foreground">
-                          <FolderOpen className="h-3 w-3" />
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <FolderOpen className="h-2.5 w-2.5" />
                           <span className="font-normal">{task.projectTitle}</span>
                         </div>
                       )}
@@ -254,17 +254,17 @@ export function DailyPlanner() {
                         </span>
                       )}
                       {task.projectCategory && (
-                        <span className="px-2 py-0.5 rounded-full bg-accent/10 text-accent font-normal">
+                        <span className="px-1.5 py-0.5 rounded-full bg-accent/10 text-accent font-normal">
                           {task.projectCategory}
                         </span>
                       )}
                       {task.itemType === 'tracker' && (
-                        <Badge variant="outline" className="font-normal text-xs">
+                        <Badge variant="outline" className="font-normal text-[10px] py-0 h-4">
                           Habitude
                         </Badge>
                       )}
                       {isCustomActivity && (
-                        <Badge variant="outline" className="font-normal text-xs border-accent/30 text-accent">
+                        <Badge variant="outline" className="font-normal text-[10px] py-0 h-4 border-accent/30 text-accent">
                           Activité perso
                         </Badge>
                       )}
@@ -274,10 +274,10 @@ export function DailyPlanner() {
                 </Card>
                 <button
                   onClick={() => deleteTask(task.id)}
-                  className="absolute top-4 right-4 p-1.5 rounded-md bg-background/80 backdrop-blur-sm border border-border opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive hover:text-destructive-foreground hover:border-destructive"
+                  className="absolute top-2 right-2 p-1 rounded-md bg-background/80 backdrop-blur-sm border border-border opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive hover:text-destructive-foreground hover:border-destructive"
                   title="Retirer cette tâche du planning"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3.5 w-3.5" />
                 </button>
               </div>
             )

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClientFromRequest } from "@/lib/supabase-server"
+import { getUserContext, formatUserContextForAI, getUserRecommendations } from "@/lib/user-context"
 
 // POST /api/projects/[id]/generate-trackers - Générer des trackers à partir d'un projet
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -62,6 +63,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       console.log("🤖 Utilisation de Claude AI pour générer des trackers intelligents...")
 
       try {
+        // Récupérer le contexte utilisateur
+        let userContextText = ""
+        const context = await getUserContext(supabase, user.id)
+        const formattedContext = formatUserContextForAI(context)
+        const recommendations = getUserRecommendations(context)
+
+        if (formattedContext) {
+          userContextText = `\n📋 CONTEXTE UTILISATEUR :\n${formattedContext}${recommendations}\n\n⚡ IMPORTANT : Propose des trackers qui s'intègrent naturellement dans le rythme et les routines de l'utilisateur.\n`
+        }
+
         // Préparer le contexte pour Claude
         const projectContext = {
           title: project.title,
@@ -75,7 +86,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         }
 
         const prompt = `Tu es un expert en formation d'habitudes et planification de vie.
-
+${userContextText}
 Analyse ce projet et génère 3-5 NOUVEAUX trackers d'habitudes CONCRETS et ACTIONNABLES pour aider l'utilisateur à réussir ce projet.
 
 Projet:

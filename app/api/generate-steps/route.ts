@@ -1,5 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk"
 import { NextRequest, NextResponse } from "next/server"
+import { createClientFromRequest } from "@/lib/supabase-server"
+import { getUserContext, formatUserContextForAI, getUserRecommendations } from "@/lib/user-context"
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -10,6 +12,13 @@ const USE_MOCK = process.env.USE_MOCK_AI === "true"
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = createClientFromRequest(request)
+
+    // Récupérer l'utilisateur
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
     const { title, description, category, startDate, deadline } = await request.json()
 
     if (!title || !description) {
@@ -87,8 +96,20 @@ Distribue intelligemment le temps disponible entre les étapes en fonction de le
       periodInfo = "Aucune contrainte temporelle définie (propose des durées réalistes génériques)"
     }
 
-    const prompt = `Tu es un assistant expert en planification de projets et en décomposition d'objectifs.
+    // Récupérer le contexte utilisateur
+    let userContextText = ""
+    if (user) {
+      const context = await getUserContext(supabase, user.id)
+      const formattedContext = formatUserContextForAI(context)
+      const recommendations = getUserRecommendations(context)
 
+      if (formattedContext) {
+        userContextText = `\n📋 CONTEXTE UTILISATEUR :\n${formattedContext}${recommendations}\n\n⚡ IMPORTANT : Tiens compte de ce contexte pour adapter les étapes aux contraintes horaires, routines et créneaux bloqués de l'utilisateur.\n`
+      }
+    }
+
+    const prompt = `Tu es un assistant expert en planification de projets et en décomposition d'objectifs.
+${userContextText}
 Un utilisateur souhaite atteindre le projet suivant :
 
 Titre : ${title}

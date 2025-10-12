@@ -1,33 +1,100 @@
 -- ============================================
--- LIFE ARCHITECT - SCHÉMA COMPLET DE BASE DE DONNÉES
+-- LIFE ARCHITECT - SCHÉMA OPTIMISÉ COMPLET
 -- ============================================
--- Ce fichier contient l'intégralité du schéma optimisé
--- Système unifié : projets > étapes > sous-étapes (avec tracking intégré)
+-- Version 2.0 - Schéma unifié et optimisé
 -- ============================================
+
+-- ============================================
+-- TYPES ENUM POUR VALIDATION ET PERFORMANCES
+-- ============================================
+
+CREATE TYPE project_status AS ENUM ('active', 'completed', 'paused', 'cancelled');
+CREATE TYPE step_status AS ENUM ('pending', 'in_progress', 'completed');
+CREATE TYPE substep_status AS ENUM ('pending', 'in_progress', 'completed', 'skipped');
+CREATE TYPE recurrence_type AS ENUM ('once', 'daily', 'every_x_days', 'weekly', 'monthly', 'custom');
+CREATE TYPE plan_item_type AS ENUM ('substep', 'tracker', 'custom_activity', 'break', 'suggested_activity');
+CREATE TYPE theme_type AS ENUM ('light', 'dark', 'system');
+CREATE TYPE language_type AS ENUM ('fr', 'en');
+CREATE TYPE gender_type AS ENUM ('male', 'female', 'non_binary', 'other', 'prefer_not_to_say');
 
 -- ============================================
 -- 1. TABLE: user_profiles
 -- ============================================
--- Profils utilisateurs avec préférences
+-- Profils utilisateurs avec préférences complètes
 CREATE TABLE IF NOT EXISTS user_profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT,
   full_name TEXT,
   avatar_url TEXT,
   bio TEXT,
+  birth_date DATE,
+  gender gender_type,
 
-  -- Préférences
-  theme TEXT DEFAULT 'dark' CHECK (theme IN ('light', 'dark', 'system')),
-  language TEXT DEFAULT 'fr' CHECK (language IN ('fr', 'en')),
+  -- Préférences générales
+  theme theme_type DEFAULT 'dark',
+  language language_type DEFAULT 'fr',
   timezone TEXT DEFAULT 'Europe/Paris',
+  location TEXT,
+
+  -- Rythme quotidien
+  wake_up_time TIME DEFAULT '07:00:00',
+  sleep_time TIME DEFAULT '23:00:00',
+
+  -- Routines
+  morning_routine TEXT,
+  morning_routine_duration INTEGER DEFAULT 30 CHECK (morning_routine_duration >= 0 AND morning_routine_duration <= 300),
+  night_routine TEXT,
+  night_routine_duration INTEGER DEFAULT 30 CHECK (night_routine_duration >= 0 AND night_routine_duration <= 300),
+
+  -- Planning de travail
+  work_hours_start TIME DEFAULT '09:00:00',
+  work_hours_end TIME DEFAULT '18:00:00',
+  preferred_work_days INTEGER[] DEFAULT ARRAY[1,2,3,4,5],
+  daily_work_hours INTEGER DEFAULT 8 CHECK (daily_work_hours >= 1 AND daily_work_hours <= 24),
+
+  -- Notifications
+  notification_enabled BOOLEAN DEFAULT true,
+  notification_time TIME DEFAULT '09:00:00',
 
   -- Métadonnées
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+COMMENT ON TABLE user_profiles IS 'Profils utilisateurs avec préférences de travail et routines';
+COMMENT ON COLUMN user_profiles.wake_up_time IS 'Heure de lever habituelle';
+COMMENT ON COLUMN user_profiles.sleep_time IS 'Heure de coucher habituelle';
+COMMENT ON COLUMN user_profiles.morning_routine IS 'Description de la routine matinale';
+COMMENT ON COLUMN user_profiles.night_routine IS 'Description de la routine du soir';
+
 -- ============================================
--- 2. TABLE: projects
+-- 2. TABLE: user_blocked_time_slots
+-- ============================================
+-- Créneaux horaires récurrents à bloquer
+CREATE TABLE IF NOT EXISTS user_blocked_time_slots (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+
+  -- Informations du créneau
+  title TEXT NOT NULL,
+  description TEXT,
+
+  -- Horaires
+  start_time TIME NOT NULL,
+  end_time TIME NOT NULL,
+
+  -- Jours de la semaine (0=dimanche, 1=lundi, etc.)
+  days_of_week INTEGER[] NOT NULL,
+
+  -- Métadonnées
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+COMMENT ON TABLE user_blocked_time_slots IS 'Créneaux horaires récurrents où l''utilisateur ne souhaite pas de tâches planifiées';
+
+-- ============================================
+-- 3. TABLE: projects
 -- ============================================
 -- Projets de vie de l'utilisateur
 CREATE TABLE IF NOT EXISTS projects (
@@ -42,9 +109,10 @@ CREATE TABLE IF NOT EXISTS projects (
 
   -- Progression et statut
   progress INTEGER DEFAULT 0 CHECK (progress >= 0 AND progress <= 100),
-  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'completed', 'paused', 'cancelled')),
+  status project_status DEFAULT 'active',
 
   -- Dates
+  start_date DATE,
   deadline DATE,
 
   -- Métadonnées
@@ -52,8 +120,11 @@ CREATE TABLE IF NOT EXISTS projects (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+COMMENT ON TABLE projects IS 'Projets de vie de l''utilisateur';
+COMMENT ON COLUMN projects.progress IS 'Pourcentage de complétion (0-100)';
+
 -- ============================================
--- 3. TABLE: project_steps
+-- 4. TABLE: project_steps
 -- ============================================
 -- Grandes étapes d'un projet
 CREATE TABLE IF NOT EXISTS project_steps (
@@ -66,7 +137,7 @@ CREATE TABLE IF NOT EXISTS project_steps (
   estimated_duration TEXT,
 
   -- Statut et ordre
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed')),
+  status step_status DEFAULT 'pending',
   order_index INTEGER NOT NULL,
 
   -- Métadonnées
@@ -74,8 +145,10 @@ CREATE TABLE IF NOT EXISTS project_steps (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+COMMENT ON TABLE project_steps IS 'Grandes étapes d''un projet';
+
 -- ============================================
--- 4. TABLE: project_substeps
+-- 5. TABLE: project_substeps
 -- ============================================
 -- Sous-étapes détaillées avec système de tracking intégré
 CREATE TABLE IF NOT EXISTS project_substeps (
@@ -90,25 +163,24 @@ CREATE TABLE IF NOT EXISTS project_substeps (
   notes TEXT,
 
   -- Statut et ordre
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed', 'skipped')),
+  status substep_status DEFAULT 'pending',
   order_index INTEGER NOT NULL DEFAULT 0,
 
   -- ============================================
   -- SYSTÈME DE RÉCURRENCE ET TRACKING
   -- ============================================
-  -- Activation du tracking (convertit la substep en "tracker")
   tracking_enabled BOOLEAN DEFAULT false,
 
   -- Configuration de la récurrence
-  recurrence_type TEXT DEFAULT 'once' CHECK (recurrence_type IN ('once', 'daily', 'every_x_days', 'weekly', 'monthly', 'custom')),
-  recurrence_value INTEGER DEFAULT 1, -- Ex: tous les X jours
-  recurrence_days INTEGER[], -- Pour hebdomadaire: [0,1,2,3,4,5,6] (0=dimanche)
+  recurrence_type recurrence_type DEFAULT 'once',
+  recurrence_value INTEGER DEFAULT 1,
+  recurrence_days INTEGER[],
 
   -- Dates de récurrence
   recurrence_start_date DATE,
   recurrence_end_date DATE,
 
-  -- Statistiques de tracking (mises à jour automatiquement)
+  -- Statistiques de tracking (calculées automatiquement)
   total_completions INTEGER DEFAULT 0,
   current_streak INTEGER DEFAULT 0,
   best_streak INTEGER DEFAULT 0,
@@ -127,8 +199,11 @@ CREATE TABLE IF NOT EXISTS project_substeps (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+COMMENT ON TABLE project_substeps IS 'Sous-étapes détaillées avec système de tracking intégré';
+COMMENT ON COLUMN project_substeps.tracking_enabled IS 'Si true, cette substep devient un tracker d''habitude';
+
 -- ============================================
--- 5. TABLE: substep_completions
+-- 6. TABLE: substep_completions
 -- ============================================
 -- Historique des complétions pour les substeps avec tracking
 CREATE TABLE IF NOT EXISTS substep_completions (
@@ -150,8 +225,10 @@ CREATE TABLE IF NOT EXISTS substep_completions (
   UNIQUE(substep_id, completion_date)
 );
 
+COMMENT ON TABLE substep_completions IS 'Historique des complétions quotidiennes pour les trackers';
+
 -- ============================================
--- 6. TABLE: daily_plans
+-- 7. TABLE: daily_plans
 -- ============================================
 -- Plans journaliers de l'utilisateur
 CREATE TABLE IF NOT EXISTS daily_plans (
@@ -172,22 +249,42 @@ CREATE TABLE IF NOT EXISTS daily_plans (
   UNIQUE(user_id, plan_date)
 );
 
+COMMENT ON TABLE daily_plans IS 'Plans journaliers générés pour l''utilisateur';
+
 -- ============================================
--- 7. TABLE: daily_plan_items
+-- 8. TABLE: daily_plan_items
 -- ============================================
 -- Items individuels d'un plan journalier
 CREATE TABLE IF NOT EXISTS daily_plan_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   daily_plan_id UUID NOT NULL REFERENCES daily_plans(id) ON DELETE CASCADE,
-  substep_id UUID REFERENCES project_substeps(id) ON DELETE CASCADE,
+  substep_id UUID REFERENCES project_substeps(id) ON DELETE SET NULL,
 
   -- Informations de la tâche
   title TEXT NOT NULL,
   description TEXT,
+  estimated_duration TEXT,
+
+  -- Métadonnées du projet (dénormalisées pour performance)
+  project_title TEXT,
+  project_category TEXT,
+  project_id UUID REFERENCES projects(id) ON DELETE SET NULL,
+  step_id UUID REFERENCES project_steps(id) ON DELETE SET NULL,
+
+  -- Type et priorité
+  item_type plan_item_type DEFAULT 'substep',
+  priority INTEGER DEFAULT 0,
 
   -- Horaire et ordre
   scheduled_time TIME,
   order_index INTEGER NOT NULL DEFAULT 0,
+
+  -- Localisation (pour activités suggérées)
+  location JSONB,
+
+  -- Flags
+  is_suggested BOOLEAN DEFAULT false,
+  can_be_combined BOOLEAN DEFAULT false,
 
   -- Statut
   completed BOOLEAN DEFAULT false,
@@ -198,17 +295,54 @@ CREATE TABLE IF NOT EXISTS daily_plan_items (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+COMMENT ON TABLE daily_plan_items IS 'Items individuels d''un plan journalier avec métadonnées complètes';
+COMMENT ON COLUMN daily_plan_items.location IS 'Données de localisation au format JSON {name, address, type}';
+COMMENT ON COLUMN daily_plan_items.is_suggested IS 'Activité suggérée par l''IA';
+
 -- ============================================
--- INDEXES POUR OPTIMISATION DES PERFORMANCES
+-- 9. TABLE: user_statistics (CACHE)
+-- ============================================
+-- Cache des statistiques utilisateur pour performances
+CREATE TABLE IF NOT EXISTS user_statistics (
+  user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+
+  -- Statistiques de projets
+  total_projects INTEGER DEFAULT 0,
+  active_projects INTEGER DEFAULT 0,
+  completed_projects INTEGER DEFAULT 0,
+
+  -- Statistiques de tâches
+  total_tasks_completed INTEGER DEFAULT 0,
+  tasks_completed_this_week INTEGER DEFAULT 0,
+  tasks_completed_this_month INTEGER DEFAULT 0,
+
+  -- Streaks
+  current_streak INTEGER DEFAULT 0,
+  best_streak INTEGER DEFAULT 0,
+  last_active_date DATE,
+
+  -- Métadonnées
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+COMMENT ON TABLE user_statistics IS 'Cache des statistiques utilisateur pour éviter les calculs coûteux';
+
+-- ============================================
+-- INDEXES OPTIMISÉS
 -- ============================================
 
 -- user_profiles
 CREATE INDEX IF NOT EXISTS idx_user_profiles_email ON user_profiles(email);
 
+-- user_blocked_time_slots
+CREATE INDEX IF NOT EXISTS idx_blocked_time_slots_user_id ON user_blocked_time_slots(user_id);
+CREATE INDEX IF NOT EXISTS idx_blocked_time_slots_days ON user_blocked_time_slots USING GIN (days_of_week);
+
 -- projects
 CREATE INDEX IF NOT EXISTS idx_projects_user_id ON projects(user_id);
 CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
-CREATE INDEX IF NOT EXISTS idx_projects_deadline ON projects(deadline);
+CREATE INDEX IF NOT EXISTS idx_projects_user_status ON projects(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_projects_deadline ON projects(deadline) WHERE deadline IS NOT NULL;
 
 -- project_steps
 CREATE INDEX IF NOT EXISTS idx_project_steps_project_id ON project_steps(project_id);
@@ -219,15 +353,17 @@ CREATE INDEX IF NOT EXISTS idx_project_steps_order ON project_steps(project_id, 
 CREATE INDEX IF NOT EXISTS idx_project_substeps_step_id ON project_substeps(step_id);
 CREATE INDEX IF NOT EXISTS idx_project_substeps_project_id ON project_substeps(project_id);
 CREATE INDEX IF NOT EXISTS idx_project_substeps_status ON project_substeps(status);
+CREATE INDEX IF NOT EXISTS idx_project_substeps_project_status ON project_substeps(project_id, status);
 CREATE INDEX IF NOT EXISTS idx_project_substeps_tracking ON project_substeps(tracking_enabled) WHERE tracking_enabled = true;
-CREATE INDEX IF NOT EXISTS idx_project_substeps_scheduled_date ON project_substeps(scheduled_date);
-CREATE INDEX IF NOT EXISTS idx_project_substeps_user_tracking ON project_substeps(project_id, tracking_enabled) WHERE tracking_enabled = true;
+CREATE INDEX IF NOT EXISTS idx_project_substeps_scheduled_date ON project_substeps(scheduled_date) WHERE scheduled_date IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_project_substeps_project_date ON project_substeps(project_id, scheduled_date) WHERE scheduled_date IS NOT NULL;
 
 -- substep_completions
 CREATE INDEX IF NOT EXISTS idx_substep_completions_substep_id ON substep_completions(substep_id);
 CREATE INDEX IF NOT EXISTS idx_substep_completions_user_id ON substep_completions(user_id);
 CREATE INDEX IF NOT EXISTS idx_substep_completions_date ON substep_completions(completion_date);
 CREATE INDEX IF NOT EXISTS idx_substep_completions_substep_date ON substep_completions(substep_id, completion_date);
+CREATE INDEX IF NOT EXISTS idx_substep_completions_user_date ON substep_completions(user_id, completion_date);
 
 -- daily_plans
 CREATE INDEX IF NOT EXISTS idx_daily_plans_user_id ON daily_plans(user_id);
@@ -236,8 +372,11 @@ CREATE INDEX IF NOT EXISTS idx_daily_plans_user_date ON daily_plans(user_id, pla
 
 -- daily_plan_items
 CREATE INDEX IF NOT EXISTS idx_daily_plan_items_plan_id ON daily_plan_items(daily_plan_id);
-CREATE INDEX IF NOT EXISTS idx_daily_plan_items_substep_id ON daily_plan_items(substep_id);
+CREATE INDEX IF NOT EXISTS idx_daily_plan_items_substep_id ON daily_plan_items(substep_id) WHERE substep_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_daily_plan_items_completed ON daily_plan_items(completed);
+CREATE INDEX IF NOT EXISTS idx_daily_plan_items_plan_time ON daily_plan_items(daily_plan_id, scheduled_time);
+CREATE INDEX IF NOT EXISTS idx_daily_plan_items_plan_completed ON daily_plan_items(daily_plan_id, completed);
+CREATE INDEX IF NOT EXISTS idx_daily_plan_items_type ON daily_plan_items(item_type);
 
 -- ============================================
 -- ROW LEVEL SECURITY (RLS)
@@ -245,12 +384,14 @@ CREATE INDEX IF NOT EXISTS idx_daily_plan_items_completed ON daily_plan_items(co
 
 -- Activer RLS sur toutes les tables
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_blocked_time_slots ENABLE ROW LEVEL SECURITY;
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE project_steps ENABLE ROW LEVEL SECURITY;
 ALTER TABLE project_substeps ENABLE ROW LEVEL SECURITY;
 ALTER TABLE substep_completions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE daily_plans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE daily_plan_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_statistics ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
 -- POLICIES: user_profiles
@@ -266,6 +407,25 @@ CREATE POLICY "Users can update their own profile"
 CREATE POLICY "Users can insert their own profile"
   ON user_profiles FOR INSERT
   WITH CHECK (auth.uid() = id);
+
+-- ============================================
+-- POLICIES: user_blocked_time_slots
+-- ============================================
+CREATE POLICY "Users can view their own blocked time slots"
+  ON user_blocked_time_slots FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can create their own blocked time slots"
+  ON user_blocked_time_slots FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own blocked time slots"
+  ON user_blocked_time_slots FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own blocked time slots"
+  ON user_blocked_time_slots FOR DELETE
+  USING (auth.uid() = user_id);
 
 -- ============================================
 -- POLICIES: projects
@@ -430,6 +590,21 @@ CREATE POLICY "Users can delete items from their own plans"
   ));
 
 -- ============================================
+-- POLICIES: user_statistics
+-- ============================================
+CREATE POLICY "Users can view their own statistics"
+  ON user_statistics FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own statistics"
+  ON user_statistics FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own statistics"
+  ON user_statistics FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+-- ============================================
 -- FONCTIONS UTILITAIRES
 -- ============================================
 
@@ -448,6 +623,11 @@ $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER update_user_profiles_updated_at
   BEFORE UPDATE ON user_profiles
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_user_blocked_time_slots_updated_at
+  BEFORE UPDATE ON user_blocked_time_slots
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
@@ -473,6 +653,11 @@ CREATE TRIGGER update_daily_plans_updated_at
 
 CREATE TRIGGER update_daily_plan_items_updated_at
   BEFORE UPDATE ON daily_plan_items
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_user_statistics_updated_at
+  BEFORE UPDATE ON user_statistics
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
@@ -727,20 +912,33 @@ $$ LANGUAGE plpgsql;
 -- Fonction pour mettre à jour les stats du daily plan
 CREATE OR REPLACE FUNCTION update_daily_plan_stats()
 RETURNS TRIGGER AS $$
+DECLARE
+  plan_id UUID;
 BEGIN
+  -- Récupérer l'ID du plan (NEW ou OLD selon l'opération)
+  IF TG_OP = 'DELETE' THEN
+    plan_id := OLD.daily_plan_id;
+  ELSE
+    plan_id := NEW.daily_plan_id;
+  END IF;
+
   UPDATE daily_plans
   SET
     total_tasks = (
       SELECT COUNT(*) FROM daily_plan_items
-      WHERE daily_plan_id = NEW.daily_plan_id
+      WHERE daily_plan_id = plan_id
     ),
     completed_tasks = (
       SELECT COUNT(*) FROM daily_plan_items
-      WHERE daily_plan_id = NEW.daily_plan_id AND completed = true
+      WHERE daily_plan_id = plan_id AND completed = true
     )
-  WHERE id = NEW.daily_plan_id;
+  WHERE id = plan_id;
 
-  RETURN NEW;
+  IF TG_OP = 'DELETE' THEN
+    RETURN OLD;
+  ELSE
+    RETURN NEW;
+  END IF;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -750,7 +948,7 @@ CREATE TRIGGER update_daily_plan_stats_on_item_change
   EXECUTE FUNCTION update_daily_plan_stats();
 
 -- ============================================
--- VUE UTILITAIRE: Trackers actifs
+-- VUE: Trackers actifs
 -- ============================================
 
 -- Vue pour faciliter l'accès aux substeps avec tracking activé (= trackers)
@@ -782,9 +980,11 @@ JOIN projects p ON p.id = ps.project_id
 WHERE ps.tracking_enabled = true
   AND ps.status != 'skipped';
 
+COMMENT ON VIEW active_trackers IS 'Vue des trackers d''habitudes actifs pour faciliter les requêtes';
+
 -- ============================================
--- FIN DU SCHÉMA
+-- FIN DU SCHÉMA OPTIMISÉ
 -- ============================================
--- Base de données optimisée et prête à l'emploi !
--- Système unifié : substeps = trackers quand tracking_enabled = true
+-- Version 2.0 - Prêt pour la production !
+-- Inclut toutes les optimisations et nouvelles fonctionnalités
 -- ============================================
