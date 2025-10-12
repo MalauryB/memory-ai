@@ -9,6 +9,17 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { ThemeToggle } from "@/components/theme-toggle"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import {
   ArrowLeft,
   GripVertical,
   Trash2,
@@ -53,6 +64,7 @@ export default function EditProjectPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [generating, setGenerating] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [editingStepId, setEditingStepId] = useState<string | null>(null)
   const [editingStepData, setEditingStepData] = useState({
     title: "",
@@ -236,6 +248,28 @@ export default function EditProjectPage() {
       alert("Erreur lors de la sauvegarde")
     } finally {
       setSaving(false)
+    }
+  }
+
+  const deleteProject = async () => {
+    if (!project) return
+
+    setDeleting(true)
+    try {
+      const response = await fetch(`/api/projects/${projectId}`, {
+        method: "DELETE",
+      })
+
+      if (response.ok) {
+        router.push("/")
+      } else {
+        alert("Erreur lors de la suppression")
+      }
+    } catch (error) {
+      console.error("Erreur:", error)
+      alert("Erreur lors de la suppression")
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -523,6 +557,43 @@ export default function EditProjectPage() {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Suppression du projet */}
+          <div className="pt-8 border-t border-border">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" className="font-normal">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Supprimer ce projet
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Cette action est irréversible. Le projet "{project.title}" et toutes ses données associées (étapes, sous-étapes, trackers) seront définitivement supprimés.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={deleteProject}
+                    disabled={deleting}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {deleting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Suppression...
+                      </>
+                    ) : (
+                      "Supprimer définitivement"
+                    )}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </main>
