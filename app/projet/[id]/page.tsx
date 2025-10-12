@@ -120,104 +120,160 @@ export default function ProjectDetailPage() {
         </div>
       </header>
 
-      <main className="flex-1 container mx-auto px-6 py-12">
-        <div className="max-w-4xl mx-auto space-y-8">
+      <main className="flex-1 container mx-auto px-6 py-8">
+        <div className="max-w-7xl mx-auto space-y-8">
           {/* En-tête du projet */}
-          <div className="space-y-6">
-            {project.image_url && (
-              <div className="w-full h-64 rounded-lg overflow-hidden">
-                <img
-                  src={project.image_url}
-                  alt={project.title}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2 flex-1">
+              <h1 className="text-4xl font-light tracking-tight">{project.title}</h1>
+              {project.category && (
+                <span className="inline-block text-sm px-3 py-1 rounded-full bg-accent/10 text-accent font-light">
+                  {project.category}
+                </span>
+              )}
+            </div>
+            <Button variant="outline" size="sm" onClick={() => router.push(`/projet/${project.id}/modifier`)}>
+              <Pencil className="h-4 w-4 mr-2" />
+              Modifier
+            </Button>
+          </div>
 
-            <div className="space-y-4">
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-2">
-                  <h1 className="text-4xl font-light tracking-tight">{project.title}</h1>
-                  {project.category && (
-                    <span className="inline-block text-sm px-3 py-1 rounded-full bg-accent/10 text-accent font-light">
-                      {project.category}
+          {/* Dashboard Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Colonne gauche - Stats et infos principales */}
+            <div className="lg:col-span-1 space-y-6">
+              {/* Image du projet */}
+              {project.image_url && (
+                <Card className="overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm">
+                  <div className="aspect-video w-full">
+                    <img
+                      src={project.image_url}
+                      alt={project.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </Card>
+              )}
+
+              {/* Progression globale */}
+              <Card className="p-6 border-border/50 bg-card/50 backdrop-blur-sm">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-light text-muted-foreground uppercase tracking-wider">Progression</h3>
+                    <span className="text-3xl font-light">
+                      {calculatedProgress}
+                      <span className="text-lg text-muted-foreground">%</span>
                     </span>
-                  )}
+                  </div>
+                  <Progress value={calculatedProgress} className="h-2" />
+                  <div className="text-sm text-muted-foreground font-light">
+                    {completedSteps} / {totalSteps} étapes complétées
+                  </div>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => router.push(`/projet/${project.id}/modifier`)}>
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Modifier
-                </Button>
-              </div>
+              </Card>
 
-              <p className="text-lg text-muted-foreground font-light leading-relaxed">
-                {project.description}
-              </p>
+              {/* Dates */}
+              <Card className="p-6 border-border/50 bg-card/50 backdrop-blur-sm space-y-4">
+                <h3 className="text-sm font-light text-muted-foreground uppercase tracking-wider">Dates</h3>
 
-              {project.deadline && (
-                <div className="flex items-center gap-2 text-muted-foreground font-light">
-                  <Calendar className="h-4 w-4" />
-                  <span>Échéance : {formatDeadline(project.deadline)}</span>
-                </div>
+                {project.start_date && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground font-light">Début</span>
+                    <span className="text-sm font-light">{formatDeadline(project.start_date)}</span>
+                  </div>
+                )}
+
+                {project.deadline && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground font-light">Échéance</span>
+                    <span className="text-sm font-light flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      {formatDeadline(project.deadline)}
+                    </span>
+                  </div>
+                )}
+
+                {!project.start_date && !project.deadline && (
+                  <p className="text-sm text-muted-foreground font-light italic">Aucune date définie</p>
+                )}
+              </Card>
+
+              {/* Trackers du projet */}
+              <ProjectTrackers
+                projectId={projectId}
+                projectTitle={project.title}
+                projectCategory={project.category}
+              />
+
+              {/* Description (discrète) */}
+              {project.description && (
+                <Card className="p-6 border-border/50 bg-card/50 backdrop-blur-sm space-y-3">
+                  <h3 className="text-sm font-light text-muted-foreground uppercase tracking-wider">Description</h3>
+                  <p className="text-sm text-muted-foreground font-light leading-relaxed">
+                    {project.description}
+                  </p>
+                </Card>
               )}
             </div>
 
-            {/* Progression globale */}
-            <Card className="p-6 border-border/50 bg-card/50 backdrop-blur-sm">
+            {/* Colonne droite - Timeline et étapes */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Calendrier prévisionnel */}
+              <ProjectTimelineCalendar
+                projectId={projectId}
+                projectStartDate={project.start_date || undefined}
+                projectDeadline={project.deadline || undefined}
+                steps={project.project_steps}
+              />
+
+              {/* Liste des étapes */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-light">Progression globale</h3>
-                  <span className="text-3xl font-light">
-                    {calculatedProgress}
-                    <span className="text-lg text-muted-foreground">%</span>
+                  <h2 className="text-2xl font-light tracking-tight">Étapes du projet</h2>
+                  <span className="text-sm text-muted-foreground font-light">
+                    {totalSteps} étape{totalSteps > 1 ? "s" : ""}
                   </span>
                 </div>
-                <Progress value={calculatedProgress} className="h-2" />
-                <div className="flex items-center justify-between text-sm text-muted-foreground font-light">
-                  <span>{completedSteps} sur {totalSteps} étapes complétées</span>
+
+                <div className="space-y-3">
+                  {project.project_steps
+                    .sort((a, b) => a.order_index - b.order_index)
+                    .map((step, index) => (
+                      <StepWithSubsteps
+                        key={step.id}
+                        step={step}
+                        stepIndex={index}
+                        projectId={projectId}
+                        projectTitle={project.title}
+                        projectCategory={project.category}
+                        onStepStatusChange={fetchProject}
+                      />
+                    ))}
                 </div>
+
+                {project.project_steps.length === 0 && (
+                  <Card className="p-8 border-border/50 bg-card/50 backdrop-blur-sm text-center">
+                    <p className="text-muted-foreground font-light">
+                      Aucune étape définie pour ce projet
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-4"
+                      onClick={() => router.push(`/projet/${project.id}/modifier`)}
+                    >
+                      Ajouter des étapes
+                    </Button>
+                  </Card>
+                )}
+
+                {project.project_steps.length > 0 && (
+                  <p className="text-sm text-muted-foreground font-light text-center pt-4">
+                    💡 Cliquez sur une étape pour changer son statut, ou déployez-la pour voir ses sous-étapes
+                  </p>
+                )}
               </div>
-            </Card>
-          </div>
-
-          {/* Trackers du projet */}
-          <ProjectTrackers
-            projectId={projectId}
-            projectTitle={project.title}
-            projectCategory={project.category}
-          />
-
-          {/* Calendrier prévisionnel */}
-          <ProjectTimelineCalendar
-            projectId={projectId}
-            projectStartDate={project.start_date || undefined}
-            projectDeadline={project.deadline || undefined}
-            steps={project.project_steps}
-          />
-
-          {/* Liste des étapes */}
-          <div className="space-y-4">
-            <h2 className="text-2xl font-light tracking-tight">Étapes du projet</h2>
-
-            <div className="space-y-3">
-              {project.project_steps
-                .sort((a, b) => a.order_index - b.order_index)
-                .map((step, index) => (
-                  <StepWithSubsteps
-                    key={step.id}
-                    step={step}
-                    stepIndex={index}
-                    projectId={projectId}
-                    projectTitle={project.title}
-                    projectCategory={project.category}
-                    onStepStatusChange={fetchProject}
-                  />
-                ))}
             </div>
-
-            <p className="text-sm text-muted-foreground font-light text-center pt-4">
-              💡 Cliquez sur une étape pour changer son statut, ou déployez-la pour voir et gérer ses sous-étapes
-            </p>
           </div>
         </div>
       </main>
