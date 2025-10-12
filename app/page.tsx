@@ -89,173 +89,190 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="border-b border-border backdrop-blur-sm sticky top-0 z-50 bg-background/80">
-        <div className="container mx-auto px-6 py-6 flex items-center justify-between">
-          <h1 className="text-2xl font-medium tracking-tight text-balance">Life Architect</h1>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Button variant="ghost" size="icon" className="rounded-full" onClick={() => router.push("/nouveau-projet")}>
-              <Plus className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="rounded-full" onClick={() => router.push("/profil")}>
-              <User className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="rounded-full" onClick={handleSignOut}>
-              <LogOut className="h-5 w-5" />
-            </Button>
-          </div>
+    <div className="min-h-screen flex">
+      {/* Sidebar gauche */}
+      <aside className="w-64 border-r border-border bg-card/30 backdrop-blur-sm flex flex-col sticky top-0 h-screen">
+        {/* Logo */}
+        <div className="p-6 border-b border-border">
+          <h1 className="text-xl font-semibold tracking-tight">Life Architect</h1>
         </div>
-      </header>
 
-      <main className="flex-1 container mx-auto px-6 py-12">
-        {currentView === "dashboard" && (
-          <div className="space-y-16 max-w-4xl mx-auto">
-            {/* Hero section */}
-            <section className="space-y-4 max-w-2xl mx-auto">
-              <h2 className="text-5xl font-semibold tracking-tight text-balance leading-tight">Bonjour</h2>
-              <p className="text-lg text-muted-foreground font-normal leading-relaxed">
-                Votre espace pour architecturer votre vie, un objectif à la fois.
-              </p>
-            </section>
+        {/* Navigation */}
+        <nav className="flex-1 p-4 space-y-2">
+          <Button
+            variant={currentView === "dashboard" ? "secondary" : "ghost"}
+            className={`w-full justify-start font-normal ${currentView === "dashboard" ? "bg-accent/10 text-accent" : ""}`}
+            onClick={() => setCurrentView("dashboard")}
+          >
+            <Target className="h-5 w-5 mr-3" />
+            Tableau de bord
+          </Button>
+          <Button
+            variant={currentView === "goals" ? "secondary" : "ghost"}
+            className={`w-full justify-start font-normal ${currentView === "goals" ? "bg-accent/10 text-accent" : ""}`}
+            onClick={() => setCurrentView("goals")}
+          >
+            <FolderKanban className="h-5 w-5 mr-3" />
+            Mes projets
+          </Button>
+          <Button
+            variant={currentView === "calendar" ? "secondary" : "ghost"}
+            className={`w-full justify-start font-normal ${currentView === "calendar" ? "bg-accent/10 text-accent" : ""}`}
+            onClick={() => setCurrentView("calendar")}
+          >
+            <CalendarDays className="h-5 w-5 mr-3" />
+            Calendrier
+          </Button>
+          <Button
+            variant={currentView === "agenda" ? "secondary" : "ghost"}
+            className={`w-full justify-start font-normal ${currentView === "agenda" ? "bg-accent/10 text-accent" : ""}`}
+            onClick={() => setCurrentView("agenda")}
+          >
+            <ListTodo className="h-5 w-5 mr-3" />
+            Prochaines étapes
+          </Button>
+          <Button
+            variant={currentView === "trackers" ? "secondary" : "ghost"}
+            className={`w-full justify-start font-normal ${currentView === "trackers" ? "bg-accent/10 text-accent" : ""}`}
+            onClick={() => setCurrentView("trackers")}
+          >
+            <Activity className="h-5 w-5 mr-3" />
+            Mes trackers
+          </Button>
+          <Button
+            variant={currentView === "planner" ? "secondary" : "ghost"}
+            className={`w-full justify-start font-normal ${currentView === "planner" ? "bg-accent/10 text-accent" : ""}`}
+            onClick={() => setCurrentView("planner")}
+          >
+            <Calendar className="h-5 w-5 mr-3" />
+            Planning journalier
+          </Button>
+        </nav>
 
-            {/* Quick stats */}
-            <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="p-8 border-border bg-card/50 backdrop-blur-sm">
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground font-normal">Projets actifs</p>
-                  <p className="text-4xl font-semibold">{stats.activeProjects}</p>
-                </div>
-              </Card>
-              <Card className="p-8 border-border bg-card/50 backdrop-blur-sm">
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground font-normal">Tâches aujourd'hui</p>
-                  <p className="text-4xl font-semibold">
-                    {stats.completedToday}<span className="text-xl text-muted-foreground">/{stats.tasksToday}</span>
-                  </p>
-                </div>
-              </Card>
-              <Card className="p-8 border-border bg-card/50 backdrop-blur-sm">
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground font-normal">Progression globale</p>
-                  <p className="text-4xl font-semibold">
-                    {stats.progressPercentage}<span className="text-xl text-muted-foreground">%</span>
-                  </p>
-                </div>
-              </Card>
-            </section>
+        {/* Bouton nouveau projet */}
+        <div className="p-4 border-t border-border">
+          <Button
+            className="w-full font-normal"
+            onClick={() => router.push("/nouveau-projet")}
+          >
+            <Plus className="h-5 w-5 mr-2" />
+            Nouveau projet
+          </Button>
+        </div>
+      </aside>
 
-            {/* Active goals preview */}
-            {projectsPreview.length > 0 && (
-              <section className="space-y-8">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-2xl font-medium tracking-tight">Projets en cours</h3>
-                  <Button
-                    variant="ghost"
-                    className="text-accent hover:text-accent/80"
-                    onClick={() => setCurrentView("goals")}
-                  >
-                    Voir tout
-                  </Button>
-                </div>
-                <div className="space-y-4">
-                  {projectsPreview.map((project) => (
-                    <GoalCard
-                      key={project.id}
-                      title={project.title}
-                      progress={project.progress}
-                      deadline={project.deadline}
-                      category={project.category}
-                    />
-                  ))}
-                </div>
+      {/* Contenu principal */}
+      <div className="flex-1 flex flex-col">
+        {/* Header avec actions utilisateur */}
+        <header className="border-b border-border backdrop-blur-sm sticky top-0 z-50 bg-background/80">
+          <div className="px-6 py-4 flex items-center justify-end">
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <Button variant="ghost" size="icon" className="rounded-full" onClick={() => router.push("/profil")}>
+                <User className="h-5 w-5" />
+              </Button>
+              <Button variant="ghost" size="icon" className="rounded-full" onClick={handleSignOut}>
+                <LogOut className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        {/* Contenu */}
+        <main className="flex-1 px-6 py-12 overflow-y-auto">
+          {currentView === "dashboard" && (
+            <div className="space-y-16 max-w-6xl mx-auto">
+              {/* Hero section */}
+              <section className="space-y-4">
+                <h2 className="text-5xl font-semibold tracking-tight text-balance leading-tight">Bonjour</h2>
+                <p className="text-lg text-muted-foreground font-normal leading-relaxed">
+                  Votre espace pour architecturer votre vie, un objectif à la fois.
+                </p>
               </section>
-            )}
 
-            {/* Empty state */}
-            {projectsPreview.length === 0 && (
-              <section className="max-w-2xl mx-auto">
-                <Card className="p-12 border-border bg-card/50 backdrop-blur-sm text-center">
-                  <div className="space-y-4">
-                    <FolderKanban className="h-12 w-12 text-muted-foreground mx-auto" />
-                    <div className="space-y-2">
-                      <h3 className="text-xl font-medium">Aucun projet pour le moment</h3>
-                      <p className="text-sm text-muted-foreground font-normal">
-                        Créez votre premier projet pour commencer à organiser vos objectifs.
-                      </p>
-                    </div>
-                    <Button onClick={() => router.push("/nouveau-projet")} className="font-normal">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Créer un projet
-                    </Button>
+              {/* Quick stats */}
+              <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card className="p-8 border-border bg-card/50 backdrop-blur-sm">
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground font-normal">Projets actifs</p>
+                    <p className="text-4xl font-semibold">{stats.activeProjects}</p>
+                  </div>
+                </Card>
+                <Card className="p-8 border-border bg-card/50 backdrop-blur-sm">
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground font-normal">Tâches aujourd'hui</p>
+                    <p className="text-4xl font-semibold">
+                      {stats.completedToday}<span className="text-xl text-muted-foreground">/{stats.tasksToday}</span>
+                    </p>
+                  </div>
+                </Card>
+                <Card className="p-8 border-border bg-card/50 backdrop-blur-sm">
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground font-normal">Progression globale</p>
+                    <p className="text-4xl font-semibold">
+                      {stats.progressPercentage}<span className="text-xl text-muted-foreground">%</span>
+                    </p>
                   </div>
                 </Card>
               </section>
-            )}
-          </div>
-        )}
 
-        {currentView === "goals" && <ProjectsList />}
-        {currentView === "planner" && <DailyPlanner />}
-        {currentView === "trackers" && <TrackersView />}
-        {currentView === "agenda" && <AgendaView />}
-        {currentView === "calendar" && <CalendarView />}
-      </main>
+              {/* Active goals preview */}
+              {projectsPreview.length > 0 && (
+                <section className="space-y-8">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-2xl font-medium tracking-tight">Projets en cours</h3>
+                    <Button
+                      variant="ghost"
+                      className="text-accent hover:text-accent/80"
+                      onClick={() => setCurrentView("goals")}
+                    >
+                      Voir tout
+                    </Button>
+                  </div>
+                  <div className="space-y-4">
+                    {projectsPreview.map((project) => (
+                      <GoalCard
+                        key={project.id}
+                        title={project.title}
+                        progress={project.progress}
+                        deadline={project.deadline}
+                        category={project.category}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
 
-      <nav className="border-t border-border backdrop-blur-sm sticky bottom-0 bg-background/80">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-around max-w-4xl mx-auto">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`rounded-full ${currentView === "dashboard" ? "text-accent" : "text-muted-foreground"}`}
-              onClick={() => setCurrentView("dashboard")}
-            >
-              <Target className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`rounded-full ${currentView === "goals" ? "text-accent" : "text-muted-foreground"}`}
-              onClick={() => setCurrentView("goals")}
-            >
-              <FolderKanban className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`rounded-full ${currentView === "calendar" ? "text-accent" : "text-muted-foreground"}`}
-              onClick={() => setCurrentView("calendar")}
-            >
-              <CalendarDays className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`rounded-full ${currentView === "agenda" ? "text-accent" : "text-muted-foreground"}`}
-              onClick={() => setCurrentView("agenda")}
-            >
-              <ListTodo className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`rounded-full ${currentView === "trackers" ? "text-accent" : "text-muted-foreground"}`}
-              onClick={() => setCurrentView("trackers")}
-            >
-              <Activity className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`rounded-full ${currentView === "planner" ? "text-accent" : "text-muted-foreground"}`}
-              onClick={() => setCurrentView("planner")}
-            >
-              <Calendar className="h-5 w-5" />
-            </Button>
-          </div>
-        </div>
-      </nav>
+              {/* Empty state */}
+              {projectsPreview.length === 0 && (
+                <section>
+                  <Card className="p-12 border-border bg-card/50 backdrop-blur-sm text-center">
+                    <div className="space-y-4">
+                      <FolderKanban className="h-12 w-12 text-muted-foreground mx-auto" />
+                      <div className="space-y-2">
+                        <h3 className="text-xl font-medium">Aucun projet pour le moment</h3>
+                        <p className="text-sm text-muted-foreground font-normal">
+                          Créez votre premier projet pour commencer à organiser vos objectifs.
+                        </p>
+                      </div>
+                      <Button onClick={() => router.push("/nouveau-projet")} className="font-normal">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Créer un projet
+                      </Button>
+                    </div>
+                  </Card>
+                </section>
+              )}
+            </div>
+          )}
+
+          {currentView === "goals" && <ProjectsList />}
+          {currentView === "planner" && <DailyPlanner />}
+          {currentView === "trackers" && <TrackersView />}
+          {currentView === "agenda" && <AgendaView />}
+          {currentView === "calendar" && <CalendarView />}
+        </main>
+      </div>
     </div>
   )
 }

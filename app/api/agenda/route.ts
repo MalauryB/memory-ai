@@ -43,9 +43,28 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
     }
 
-    // Transformer les données pour avoir une liste plate d'étapes avec leur projet
-    const upcomingSteps = projects?.flatMap((project) =>
-      project.project_steps.map((step) => ({
+    // Pour chaque projet, ne garder que l'étape en cours et la suivante (n+1)
+    const upcomingSteps = projects?.flatMap((project) => {
+      // Trier les étapes du projet par order_index
+      const sortedSteps = [...project.project_steps].sort((a, b) => a.order_index - b.order_index)
+
+      // Trouver l'étape en cours (in_progress)
+      const inProgressStep = sortedSteps.find(step => step.status === "in_progress")
+
+      // Trouver la prochaine étape (première pending)
+      const nextStep = sortedSteps.find(step => step.status === "pending")
+
+      // Créer un tableau avec uniquement l'étape en cours et/ou la suivante
+      const stepsToInclude = []
+      if (inProgressStep) {
+        stepsToInclude.push(inProgressStep)
+      }
+      if (nextStep) {
+        stepsToInclude.push(nextStep)
+      }
+
+      // Transformer en format attendu
+      return stepsToInclude.map((step) => ({
         stepId: step.id,
         stepTitle: step.title,
         stepDescription: step.description,
@@ -58,17 +77,7 @@ export async function GET(request: NextRequest) {
         projectDeadline: project.deadline,
         projectImageUrl: project.image_url,
       }))
-    ) || []
-
-    // Trier les étapes : d'abord par statut (in_progress avant pending), puis par order_index
-    upcomingSteps.sort((a, b) => {
-      // Priorité aux étapes en cours
-      if (a.stepStatus === "in_progress" && b.stepStatus !== "in_progress") return -1
-      if (a.stepStatus !== "in_progress" && b.stepStatus === "in_progress") return 1
-
-      // Ensuite par ordre dans le projet
-      return a.stepOrderIndex - b.stepOrderIndex
-    })
+    }) || []
 
     return NextResponse.json({ steps: upcomingSteps })
   } catch (error) {

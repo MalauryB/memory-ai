@@ -132,34 +132,8 @@ export function AgendaView() {
       <div className="space-y-2">
         <h1 className="text-4xl font-semibold tracking-tight">Prochaines étapes</h1>
         <p className="text-muted-foreground font-normal">
-          Toutes vos étapes à venir, tous projets confondus
+          L'étape en cours et la suivante pour chaque projet
         </p>
-      </div>
-
-      {/* Statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-6 border-border bg-card/50 backdrop-blur-sm">
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground font-medium">Total d'étapes</p>
-            <p className="text-3xl font-normal">{steps.length}</p>
-          </div>
-        </Card>
-        <Card className="p-6 border-border bg-blue-500/5 border-blue-500/20 backdrop-blur-sm">
-          <div className="space-y-1">
-            <p className="text-sm text-blue-500 font-medium">En cours</p>
-            <p className="text-3xl font-normal text-blue-500">
-              {steps.filter((s) => s.stepStatus === "in_progress").length}
-            </p>
-          </div>
-        </Card>
-        <Card className="p-6 border-border bg-card/50 backdrop-blur-sm">
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground font-medium">À faire</p>
-            <p className="text-3xl font-normal">
-              {steps.filter((s) => s.stepStatus === "pending").length}
-            </p>
-          </div>
-        </Card>
       </div>
 
       {/* Liste des étapes groupées par projet */}
