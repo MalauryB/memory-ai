@@ -262,10 +262,6 @@ export function AgendaView() {
           ))}
         </div>
       )}
-
-      <p className="text-sm text-muted-foreground font-normal text-center pt-4">
-        💡 Cliquez sur une étape pour changer son statut
-      </p>
     </div>
   )
 }
