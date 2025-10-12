@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { ProjectTrackers } from "@/components/project-trackers"
+import { ProjectTimelineCalendar } from "@/components/project-timeline-calendar"
 import { ArrowLeft, Calendar, Loader2, Pencil } from "lucide-react"
 import { getUser } from "@/lib/auth"
 import { StepWithSubsteps } from "@/components/step-with-substeps"
@@ -25,6 +26,7 @@ interface Project {
   title: string
   description: string
   category: string
+  start_date: string | null
   deadline: string | null
   image_url: string | null
   progress: number
@@ -183,6 +185,14 @@ export default function ProjectDetailPage() {
             projectId={projectId}
             projectTitle={project.title}
             projectCategory={project.category}
+          />
+
+          {/* Calendrier prévisionnel */}
+          <ProjectTimelineCalendar
+            projectId={projectId}
+            projectStartDate={project.start_date || undefined}
+            projectDeadline={project.deadline || undefined}
+            steps={project.project_steps}
           />
 
           {/* Liste des étapes */}

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClientFromRequest } from "@/lib/supabase-server"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = createClientFromRequest(request)
-    const projectId = params.id
+    const { id: projectId } = await params
 
     // Vérifier l'authentification
     const {
@@ -49,11 +49,11 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = createClientFromRequest(request)
-    const projectId = params.id
-    const { title, description, category, deadline, steps } = await request.json()
+    const { id: projectId } = await params
+    const { title, description, category, startDate, deadline, steps } = await request.json()
 
     // Vérifier l'authentification
     const {
@@ -86,6 +86,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
         title,
         description,
         category,
+        start_date: startDate || null,
         deadline: deadline || null,
       })
       .eq("id", projectId)

@@ -21,6 +21,7 @@ interface ProjectFormData {
   title: string
   description: string
   category: string
+  startDate: string
   deadline: string
   imageUrl: string
   steps: ProjectStep[]
@@ -35,6 +36,7 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
     title: "",
     description: "",
     category: "",
+    startDate: "",
     deadline: "",
     imageUrl: "",
     steps: []
@@ -204,6 +206,7 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
           title: formData.title,
           description: formData.description,
           category: formData.category,
+          startDate: formData.startDate,
           deadline: formData.deadline,
         }),
       })
@@ -410,14 +413,26 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
                   />
                 </div>
                 <div className="space-y-3">
+                  <Label htmlFor="startDate" className="font-light">
+                    Date de début <span className="text-muted-foreground text-sm">(optionnel)</span>
+                  </Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={formData.startDate}
+                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-3">
                   <Label htmlFor="deadline" className="font-light">
-                    Date limite <span className="text-muted-foreground text-sm">(optionnel)</span>
+                    Date de fin / Deadline <span className="text-muted-foreground text-sm">(optionnel)</span>
                   </Label>
                   <Input
                     id="deadline"
                     type="date"
                     value={formData.deadline}
                     onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                    min={formData.startDate || undefined}
                   />
                 </div>
               </div>

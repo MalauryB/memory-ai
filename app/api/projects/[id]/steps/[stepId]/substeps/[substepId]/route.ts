@@ -4,11 +4,11 @@ import { createClientFromRequest } from "@/lib/supabase-server"
 // PATCH - Mettre à jour une sous-étape (notamment son statut)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string; stepId: string; substepId: string } }
+  { params }: { params: Promise<{ id: string; stepId: string; substepId: string }> }
 ) {
   try {
     const supabase = createClientFromRequest(request)
-    const { id: projectId, substepId } = params
+    const { id: projectId, substepId } = await params
     const body = await request.json()
 
     // Vérifier l'authentification
@@ -73,11 +73,11 @@ export async function PATCH(
 // DELETE - Supprimer une sous-étape
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; stepId: string; substepId: string } }
+  { params }: { params: Promise<{ id: string; stepId: string; substepId: string }> }
 ) {
   try {
     const supabase = createClientFromRequest(request)
-    const { id: projectId, substepId } = params
+    const { id: projectId, substepId } = await params
 
     // Vérifier l'authentification
     const {

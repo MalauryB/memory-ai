@@ -10,7 +10,7 @@ const USE_MOCK = process.env.USE_MOCK_AI === "true"
 
 export async function POST(request: NextRequest) {
   try {
-    const { title, description, category, deadline } = await request.json()
+    const { title, description, category, startDate, deadline } = await request.json()
 
     if (!title || !description) {
       return NextResponse.json(
@@ -60,19 +60,62 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ steps: mockSteps })
     }
 
+    // Calculer la période totale disponible si on a les dates
+    let periodInfo = ""
+    let totalDays = 0
+
+    if (startDate && deadline) {
+      const start = new Date(startDate)
+      const end = new Date(deadline)
+      totalDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+
+      const months = Math.floor(totalDays / 30)
+      const weeks = Math.floor(totalDays / 7)
+
+      periodInfo = `
+PÉRIODE TOTALE DISPONIBLE : ${totalDays} jours (environ ${weeks} semaines / ${months} mois)
+Date de début : ${start.toLocaleDateString("fr-FR")}
+Date de fin : ${end.toLocaleDateString("fr-FR")}
+
+⚠️ IMPORTANT : Les durées estimées de TOUTES les étapes DOIVENT s'additionner pour correspondre approximativement à ${totalDays} jours.
+Distribue intelligemment le temps disponible entre les étapes en fonction de leur complexité.`
+    } else if (deadline) {
+      periodInfo = `Date limite : ${deadline} (analyse et propose des durées cohérentes avec cette échéance)`
+    } else if (startDate) {
+      periodInfo = `Date de début : ${startDate} (propose des durées réalistes pour chaque étape)`
+    } else {
+      periodInfo = "Aucune contrainte temporelle définie (propose des durées réalistes génériques)"
+    }
+
     const prompt = `Tu es un assistant expert en planification de projets et en décomposition d'objectifs.
 
 Un utilisateur souhaite atteindre le projet suivant :
 
 Titre : ${title}
 Catégorie : ${category || "Non spécifiée"}
-Date limite : ${deadline || "Non spécifiée"}
 Description : ${description}
+
+${periodInfo}
 
 Ta tâche est de décomposer ce projet en étapes concrètes, actionnables et réalistes. Pour chaque étape, fournis :
 1. Un titre clair et concis
 2. Une description détaillée de ce qu'il faut faire
-3. Une estimation de durée réaliste
+3. Une estimation de durée PRÉCISE en jours (ex: "14 jours", "30 jours", "7 jours")
+
+${totalDays > 0 ? `
+RÈGLES STRICTES pour les durées :
+- La SOMME totale des durées doit être proche de ${totalDays} jours (±10%)
+- Exprime TOUJOURS les durées en JOURS (pas de "semaines" ou "mois")
+- Répartis le temps intelligemment selon la complexité de chaque étape
+- Les étapes préparatoires sont généralement plus courtes
+- Les étapes de mise en pratique sont généralement plus longues
+
+Exemple de répartition pour ${totalDays} jours :
+- Si tu as 5 étapes et ${totalDays} jours → chaque étape fait en moyenne ${Math.round(totalDays / 5)} jours
+- Ajuste ensuite selon la complexité : les étapes simples moins, les étapes complexes plus
+` : `
+- Exprime les durées en jours pour plus de précision (ex: "14 jours" au lieu de "2 semaines")
+`}
 
 Réponds UNIQUEMENT avec un JSON valide suivant ce format exact (sans markdown, sans commentaires) :
 {
@@ -80,7 +123,7 @@ Réponds UNIQUEMENT avec un JSON valide suivant ce format exact (sans markdown, 
     {
       "title": "Titre de l'étape",
       "description": "Description détaillée de l'étape",
-      "estimatedDuration": "Durée estimée"
+      "estimatedDuration": "X jours"
     }
   ]
 }

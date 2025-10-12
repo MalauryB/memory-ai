@@ -3,11 +3,11 @@ import { createClientFromRequest } from "@/lib/supabase-server"
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string; stepId: string } }
+  { params }: { params: Promise<{ id: string; stepId: string }> }
 ) {
   try {
     const supabase = createClientFromRequest(request)
-    const { id: projectId, stepId } = params
+    const { id: projectId, stepId } = await params
     const { status } = await request.json()
 
     // Vérifier l'authentification

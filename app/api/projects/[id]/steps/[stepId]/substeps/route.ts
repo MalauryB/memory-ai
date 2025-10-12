@@ -4,11 +4,11 @@ import { createClientFromRequest } from "@/lib/supabase-server"
 // GET - Récupérer toutes les sous-étapes d'une étape
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string; stepId: string } }
+  { params }: { params: Promise<{ id: string; stepId: string }> }
 ) {
   try {
     const supabase = createClientFromRequest(request)
-    const { id: projectId, stepId } = params
+    const { id: projectId, stepId } = await params
 
     // Vérifier l'authentification
     const {
@@ -56,11 +56,11 @@ export async function GET(
 // POST - Créer des sous-étapes (peut en créer plusieurs à la fois pour la récurrence)
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string; stepId: string } }
+  { params }: { params: Promise<{ id: string; stepId: string }> }
 ) {
   try {
     const supabase = createClientFromRequest(request)
-    const { id: projectId, stepId } = params
+    const { id: projectId, stepId } = await params
     const { substeps } = await request.json()
 
     // Vérifier l'authentification
@@ -92,7 +92,10 @@ export async function POST(
     let orderIndex = 0
 
     for (const substep of substeps) {
-      if (substep.is_recurring && substep.recurrence_count > 1) {
+      // Déterminer si c'est une tâche récurrente (tracking activé) ou ponctuelle
+      const isRecurring = substep.tracking_enabled || (substep.recurrence_type && substep.recurrence_type !== "once")
+
+      if (isRecurring && substep.recurrence_count > 1) {
         // Créer plusieurs occurrences pour les tâches récurrentes
         for (let i = 0; i < substep.recurrence_count; i++) {
           let scheduledDate = null
@@ -115,9 +118,12 @@ export async function POST(
             title: `${substep.title} (${i + 1}/${substep.recurrence_count})`,
             description: substep.description,
             estimated_duration: substep.estimated_duration,
-            is_recurring: true,
-            recurrence_type: substep.recurrence_type,
-            recurrence_count: substep.recurrence_count,
+            tracking_enabled: substep.tracking_enabled || false,
+            recurrence_type: substep.recurrence_type || "once",
+            recurrence_value: substep.recurrence_value || 1,
+            recurrence_days: substep.recurrence_days || null,
+            recurrence_start_date: substep.recurrence_start_date || null,
+            recurrence_end_date: substep.recurrence_end_date || null,
             scheduled_date: scheduledDate ? scheduledDate.toISOString().split("T")[0] : null,
             order_index: orderIndex++,
             status: "pending",
@@ -131,10 +137,13 @@ export async function POST(
           title: substep.title,
           description: substep.description,
           estimated_duration: substep.estimated_duration,
-          is_recurring: false,
-          recurrence_type: "once",
-          recurrence_count: 1,
-          scheduled_date: null,
+          tracking_enabled: substep.tracking_enabled || false,
+          recurrence_type: substep.recurrence_type || "once",
+          recurrence_value: substep.recurrence_value || 1,
+          recurrence_days: substep.recurrence_days || null,
+          recurrence_start_date: substep.recurrence_start_date || null,
+          recurrence_end_date: substep.recurrence_end_date || null,
+          scheduled_date: substep.scheduled_date || null,
           order_index: orderIndex++,
           status: "pending",
         })

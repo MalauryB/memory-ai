@@ -20,6 +20,7 @@ import {
   Save,
   ChevronUp,
   ChevronDown,
+  Sparkles,
 } from "lucide-react"
 import { getUser } from "@/lib/auth"
 
@@ -37,6 +38,7 @@ interface Project {
   title: string
   description: string
   category: string
+  start_date: string | null
   deadline: string | null
   image_url: string | null
   project_steps: ProjectStep[]
@@ -50,6 +52,7 @@ export default function EditProjectPage() {
   const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [generating, setGenerating] = useState(false)
   const [editingStepId, setEditingStepId] = useState<string | null>(null)
   const [editingStepData, setEditingStepData] = useState({
     title: "",
@@ -156,6 +159,53 @@ export default function EditProjectPage() {
     startEditStep(newStep)
   }
 
+  const generateSteps = async () => {
+    if (!project) return
+
+    setGenerating(true)
+    try {
+      const response = await fetch("/api/generate-steps", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: project.title,
+          description: project.description,
+          category: project.category,
+          startDate: project.start_date,
+          deadline: project.deadline,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Erreur lors de la génération")
+      }
+
+      const data = await response.json()
+
+      // Ajouter les nouvelles étapes générées aux étapes existantes
+      const generatedSteps: ProjectStep[] = data.steps.map((step: any, index: number) => ({
+        id: `temp-${Date.now()}-${index}`,
+        title: step.title,
+        description: step.description || "",
+        estimated_duration: step.estimatedDuration || "",
+        status: "pending",
+        order_index: project.project_steps.length + index,
+      }))
+
+      setProject({
+        ...project,
+        project_steps: [...project.project_steps, ...generatedSteps],
+      })
+    } catch (error) {
+      console.error("Erreur:", error)
+      alert("Erreur lors de la génération des étapes. Veuillez réessayer.")
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   const saveProject = async () => {
     if (!project) return
 
@@ -170,6 +220,7 @@ export default function EditProjectPage() {
           title: project.title,
           description: project.description,
           category: project.category,
+          startDate: project.start_date,
           deadline: project.deadline,
           steps: project.project_steps,
         }),
@@ -274,7 +325,7 @@ export default function EditProjectPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="category" className="font-light">
                     Catégorie
@@ -286,16 +337,31 @@ export default function EditProjectPage() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="deadline" className="font-light">
-                    Date limite
-                  </Label>
-                  <Input
-                    id="deadline"
-                    type="date"
-                    value={project.deadline || ""}
-                    onChange={(e) => setProject({ ...project, deadline: e.target.value })}
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="start_date" className="font-light">
+                      Date de début
+                    </Label>
+                    <Input
+                      id="start_date"
+                      type="date"
+                      value={project.start_date || ""}
+                      onChange={(e) => setProject({ ...project, start_date: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="deadline" className="font-light">
+                      Date de fin / Deadline
+                    </Label>
+                    <Input
+                      id="deadline"
+                      type="date"
+                      value={project.deadline || ""}
+                      onChange={(e) => setProject({ ...project, deadline: e.target.value })}
+                      min={project.start_date || undefined}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -305,10 +371,25 @@ export default function EditProjectPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-xl font-light">Étapes du projet</h3>
-              <Button onClick={addNewStep} variant="outline" size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Ajouter une étape
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button onClick={generateSteps} disabled={generating} variant="outline" size="sm" className="font-light">
+                  {generating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Génération...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Générer avec IA
+                    </>
+                  )}
+                </Button>
+                <Button onClick={addNewStep} variant="outline" size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Ajouter manuellement
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-3">
