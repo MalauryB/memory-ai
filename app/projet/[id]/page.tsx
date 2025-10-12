@@ -266,12 +266,6 @@ export default function ProjectDetailPage() {
                     </Button>
                   </Card>
                 )}
-
-                {project.project_steps.length > 0 && (
-                  <p className="text-sm text-muted-foreground font-normal text-center pt-4">
-                    💡 Cliquez sur une étape pour changer son statut, ou déployez-la pour voir ses sous-étapes
-                  </p>
-                )}
               </div>
             </div>
           </div>

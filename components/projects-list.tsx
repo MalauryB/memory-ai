@@ -103,7 +103,7 @@ export function ProjectsList() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h2 className="text-3xl font-semibold tracking-tight">Mes projets</h2>
@@ -117,7 +117,7 @@ export function ProjectsList() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {projects.map((project) => (
           <Card
             key={project.id}
@@ -125,7 +125,7 @@ export function ProjectsList() {
             onClick={() => router.push(`/projet/${project.id}`)}
           >
             {project.image_url && (
-              <div className="w-full h-48 overflow-hidden">
+              <div className="w-full h-32 overflow-hidden">
                 <img
                   src={project.image_url}
                   alt={project.title}
@@ -133,32 +133,32 @@ export function ProjectsList() {
                 />
               </div>
             )}
-            <div className="p-6 space-y-4">
-              <div className="space-y-2">
+            <div className="p-4 space-y-3">
+              <div className="space-y-1.5">
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-medium text-lg leading-tight group-hover:text-accent transition-colors">
+                  <h3 className="font-medium text-base leading-tight group-hover:text-accent transition-colors">
                     {project.title}
                   </h3>
                   {project.category && (
-                    <span className="text-xs px-2 py-1 rounded-full bg-accent/10 text-accent font-normal whitespace-nowrap">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/10 text-accent font-normal whitespace-nowrap">
                       {project.category}
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground font-normal line-clamp-2">
+                <p className="text-xs text-muted-foreground font-normal line-clamp-2">
                   {project.description}
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground font-normal">Progression</span>
                   <span className="font-normal">{project.progress}%</span>
                 </div>
                 <Progress value={project.progress} className="h-1" />
               </div>
 
-              <div className="flex items-center justify-between text-sm text-muted-foreground font-normal">
+              <div className="flex items-center justify-between text-xs text-muted-foreground font-normal">
                 <span>{project.project_steps?.length || 0} étapes</span>
                 {formatDeadline(project.deadline) && (
                   <div className="flex items-center gap-1">

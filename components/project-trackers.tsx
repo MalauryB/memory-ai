@@ -122,89 +122,45 @@ export function ProjectTrackers({ projectId, projectTitle, projectCategory }: Pr
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-light tracking-tight">Trackers du projet</h2>
-          <p className="text-sm text-muted-foreground font-light">
-            Suivez les habitudes et tâches récurrentes liées à ce projet
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {trackers.length === 0 ? (
-            <Button onClick={handleGenerateTrackers} disabled={generating} className="font-light">
-              {generating ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Génération...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Générer avec IA
-                </>
-              )}
-            </Button>
-          ) : (
-            <>
-              <CreateTrackerDialog
-                projectId={projectId}
-                onTrackerCreated={fetchProjectTrackers}
-              />
-              <Button onClick={handleGenerateTrackers} disabled={generating} variant="outline" className="font-light">
-                {generating ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Génération...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Générer avec IA
-                  </>
-                )}
-              </Button>
-            </>
-          )}
-        </div>
+    <Card className="p-6 border-border bg-card/50 backdrop-blur-sm space-y-4">
+      <div className="space-y-1">
+        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Trackers</h3>
+        <p className="text-xs text-muted-foreground font-normal">
+          Suivez vos habitudes liées à ce projet
+        </p>
       </div>
 
       {trackers.length === 0 ? (
-        <Card className="p-8 border-border/50 bg-card/50 backdrop-blur-sm text-center">
-          <div className="mx-auto w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-4">
-            <Activity className="h-6 w-6 text-accent" />
+        <div className="text-center py-6 space-y-3">
+          <div className="mx-auto w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
+            <Activity className="h-5 w-5 text-accent" />
           </div>
-          <h3 className="text-lg font-light mb-2">Aucun tracker pour ce projet</h3>
-          <p className="text-sm text-muted-foreground font-light mb-4">
-            Générez automatiquement des trackers basés sur les étapes de votre projet pour suivre votre progression
-            quotidienne.
+          <p className="text-xs text-muted-foreground font-normal">
+            Aucun tracker pour ce projet
           </p>
-          <Button onClick={handleGenerateTrackers} disabled={generating} variant="outline" className="font-light">
+          <Button
+            onClick={handleGenerateTrackers}
+            disabled={generating}
+            size="sm"
+            variant="outline"
+            className="font-normal w-full"
+          >
             {generating ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Génération en cours...
+                <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                Génération...
               </>
             ) : (
               <>
-                <Plus className="h-4 w-4 mr-2" />
-                Générer maintenant
+                <Sparkles className="h-3 w-3 mr-2" />
+                Générer avec IA
               </>
             )}
           </Button>
-        </Card>
+        </div>
       ) : (
         <>
-          <Alert className="border-accent/50 bg-accent/5">
-            <AlertCircle className="h-4 w-4 text-accent" />
-            <AlertDescription className="text-sm font-light">
-              Ces trackers ont été générés à partir des étapes de votre projet. Marquez-les comme complétés chaque jour
-              pour maintenir votre progression.
-            </AlertDescription>
-          </Alert>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
             {trackers.map((tracker) => (
               <TrackerCard
                 key={tracker.id}
@@ -216,14 +172,33 @@ export function ProjectTrackers({ projectId, projectTitle, projectCategory }: Pr
             ))}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-2 pt-2">
             <CreateTrackerDialog
               projectId={projectId}
               onTrackerCreated={fetchProjectTrackers}
             />
+            <Button
+              onClick={handleGenerateTrackers}
+              disabled={generating}
+              variant="outline"
+              size="sm"
+              className="font-normal w-full"
+            >
+              {generating ? (
+                <>
+                  <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                  Génération...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-3 w-3 mr-2" />
+                  Générer plus
+                </>
+              )}
+            </Button>
           </div>
         </>
       )}
-    </div>
+    </Card>
   )
 }
