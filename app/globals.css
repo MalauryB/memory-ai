@@ -3,6 +3,14 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@font-face {
+  font-family: 'Cubic';
+  src: url('/cubic/cubic.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   /* Ultra minimal color palette - light mode */
   --background: oklch(0.99 0 0);

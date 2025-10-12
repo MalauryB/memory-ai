@@ -1,7 +1,7 @@
 {
-  "name": "Life Architect",
-  "short_name": "Life Architect",
-  "description": "Architecte de votre vie - Planifiez, suivez et atteignez vos objectifs",
+  "name": "Memo'ry planner",
+  "short_name": "Memo'ry planner",
+  "description": "Organisez votre vie - Planifiez, suivez et atteignez vos objectifs",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#141414",

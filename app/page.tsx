@@ -54,7 +54,7 @@ export default function Home() {
         {/* Logo et bouton collapse */}
         <div className="p-6 border-b border-border flex items-center justify-between">
           {!sidebarCollapsed && (
-            <h1 className="text-xl font-semibold tracking-tight">Life Architect</h1>
+            <h1 className="text-xl font-semibold tracking-tight">Memo'ry planner</h1>
           )}
           <Button
             variant="ghost"

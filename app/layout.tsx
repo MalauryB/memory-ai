@@ -8,8 +8,8 @@ import { ThemeProvider } from "@/components/theme-provider"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "Life Architect",
-  description: "Architecte de votre vie - Planifiez, suivez et atteignez vos objectifs",
+  title: "Memo'ry planner",
+  description: "Organisez votre vie - Planifiez, suivez et atteignez vos objectifs",
   generator: "v0.app",
   manifest: "/manifest.json",
 }

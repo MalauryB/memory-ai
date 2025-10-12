@@ -79,8 +79,8 @@ export default function AuthPage() {
     <div className="min-h-screen flex items-center justify-center px-6 bg-background">
       <Card className="w-full max-w-md p-8 space-y-8 border-border/50 bg-card/50 backdrop-blur-sm">
         <div className="space-y-2 text-center">
-          <h1 className="text-4xl font-light tracking-tight">Life Architect</h1>
-          <p className="text-muted-foreground font-light">
+          <h1 className="text-4xl font-semibold tracking-tight">Memo'ry planner</h1>
+          <p className="text-muted-foreground font-normal">
             {isSignUp ? "Créer un compte" : "Connexion à votre compte"}
           </p>
         </div>
