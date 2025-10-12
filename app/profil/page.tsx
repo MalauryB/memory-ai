@@ -112,14 +112,18 @@ export default function ProfilePage() {
         }),
       })
 
+      const data = await response.json()
+
       if (response.ok) {
         alert("Profil sauvegardé avec succès !")
+        router.back()
       } else {
-        alert("Erreur lors de la sauvegarde")
+        console.error("Erreur serveur:", data)
+        alert(`Erreur lors de la sauvegarde: ${data.error || "Erreur inconnue"}`)
       }
     } catch (error) {
       console.error("Erreur:", error)
-      alert("Erreur lors de la sauvegarde")
+      alert("Erreur lors de la sauvegarde: " + (error as Error).message)
     } finally {
       setSaving(false)
     }
