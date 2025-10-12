@@ -95,6 +95,9 @@ export function DailyPlanner() {
 
   async function generateWithConfig(config: { intensity: string; style: string; selectedActivities: string[] }) {
     setGenerating(true)
+    // Vider le planning pendant la génération pour forcer le rafraîchissement
+    setTasks([])
+
     try {
       const response = await fetch("/api/daily-plan", {
         method: "POST",
@@ -110,9 +113,13 @@ export function DailyPlanner() {
 
       if (response.ok) {
         const data = await response.json()
-        setTasks(data.tasks || [])
+        console.log("Nouveau planning généré:", data.tasks?.length, "tâches")
+        // Force React à re-rendre en créant un nouveau tableau
+        setTasks([...data.tasks || []])
         setAvailableHours(data.availableHours || 8)
         setHasPlanning(true)
+      } else {
+        console.error("Erreur génération:", response.status)
       }
     } catch (error) {
       console.error("Erreur:", error)

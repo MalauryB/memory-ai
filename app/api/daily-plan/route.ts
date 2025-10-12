@@ -431,6 +431,7 @@ async function generateIntelligentDailyPlan(config: {
   const dailyPlan: DailyPlanTask[] = []
   let currentMinutes = 0
   let lastBreakTime = 0
+  let breakCounter = 0
 
   if (style === 'thematic_blocks') {
     // Regrouper par catégorie de projet
@@ -450,7 +451,8 @@ async function generateIntelligentDailyPlan(config: {
           availableMinutes,
           breakFrequency,
           intensityConfig,
-          workEndHour
+          workEndHour,
+          breakCounter
         })
 
         if (!result) break
@@ -459,6 +461,7 @@ async function generateIntelligentDailyPlan(config: {
         currentMinute = result.currentMinute
         currentMinutes = result.currentMinutes
         lastBreakTime = result.lastBreakTime
+        breakCounter = result.breakCounter
       }
     }
   } else {
@@ -476,7 +479,8 @@ async function generateIntelligentDailyPlan(config: {
         availableMinutes,
         breakFrequency,
         intensityConfig,
-        workEndHour
+        workEndHour,
+        breakCounter
       })
 
       if (!result) break
@@ -485,6 +489,7 @@ async function generateIntelligentDailyPlan(config: {
       currentMinute = result.currentMinute
       currentMinutes = result.currentMinutes
       lastBreakTime = result.lastBreakTime
+      breakCounter = result.breakCounter
     }
   }
 
@@ -521,7 +526,7 @@ async function generateIntelligentDailyPlan(config: {
 
     // Pause si nécessaire
     if (currentMinutes - lastBreakTime >= breakFrequency) {
-      addBreakToPlan(dailyPlan, currentHour, currentMinute, intensityConfig.breakDuration)
+      addBreakToPlan(dailyPlan, currentHour, currentMinute, intensityConfig.breakDuration, breakCounter++)
       currentMinute += intensityConfig.breakDuration
       if (currentMinute >= 60) {
         currentHour += 1
@@ -541,6 +546,11 @@ async function generateIntelligentDailyPlan(config: {
           title: t.title,
           category: t.projectCategory,
           duration: t.estimatedDuration
+        })),
+        customActivities: customActivities.map(a => ({
+          title: a.title,
+          duration: a.estimated_duration,
+          type: a.activity_type
         })),
         currentHour,
         currentMinute,
@@ -569,7 +579,8 @@ function addTaskToPlan(params: {
   breakFrequency: number
   intensityConfig: any
   workEndHour: number
-}): { currentHour: number, currentMinute: number, currentMinutes: number, lastBreakTime: number } | null {
+  breakCounter: number
+}): { currentHour: number, currentMinute: number, currentMinutes: number, lastBreakTime: number, breakCounter: number } | null {
   const {
     task,
     dailyPlan,
@@ -580,7 +591,8 @@ function addTaskToPlan(params: {
     availableMinutes,
     breakFrequency,
     intensityConfig,
-    workEndHour
+    workEndHour,
+    breakCounter
   } = params
 
   const durationInMinutes = parseDuration(task.estimated_duration)
@@ -625,8 +637,9 @@ function addTaskToPlan(params: {
 
   // Pause longue si nécessaire
   let newLastBreakTime = lastBreakTime
+  let newBreakCounter = breakCounter
   if (newCurrentMinutes - lastBreakTime >= breakFrequency) {
-    addBreakToPlan(dailyPlan, newCurrentHour, newCurrentMinute, intensityConfig.breakDuration)
+    addBreakToPlan(dailyPlan, newCurrentHour, newCurrentMinute, intensityConfig.breakDuration, newBreakCounter++)
     newCurrentMinute += intensityConfig.breakDuration
     if (newCurrentMinute >= 60) {
       newCurrentHour += 1
@@ -639,15 +652,16 @@ function addTaskToPlan(params: {
     currentHour: newCurrentHour,
     currentMinute: newCurrentMinute,
     currentMinutes: newCurrentMinutes,
-    lastBreakTime: newLastBreakTime
+    lastBreakTime: newLastBreakTime,
+    breakCounter: newBreakCounter
   }
 }
 
-function addBreakToPlan(dailyPlan: DailyPlanTask[], hour: number, minute: number, duration: number) {
+function addBreakToPlan(dailyPlan: DailyPlanTask[], hour: number, minute: number, duration: number, counter: number) {
   const scheduledTime = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
 
   dailyPlan.push({
-    id: `break-${Date.now()}`,
+    id: `break-${counter}`,
     title: "Pause",
     description: "Moment de repos",
     estimatedDuration: `${duration}min`,
@@ -661,11 +675,12 @@ async function generateRelaxationSuggestion(params: {
   anthropicApiKey: string
   userCity: string
   planSummary: any[]
+  customActivities?: any[]
   currentHour: number
   currentMinute: number
   supabase: any
 }): Promise<DailyPlanTask | null> {
-  const { anthropicApiKey, userCity, planSummary, currentHour, currentMinute, supabase } = params
+  const { anthropicApiKey, userCity, planSummary, customActivities, currentHour, currentMinute, supabase } = params
 
   // Récupérer quelques lieux intéressants
   const { data: locations } = await supabase
@@ -678,6 +693,11 @@ async function generateRelaxationSuggestion(params: {
 
 Planning actuel:
 ${planSummary.map(t => `- ${t.title} (${t.category}) - ${t.duration}`).join('\n')}
+
+Activités personnalisées sélectionnées par l'utilisateur:
+${customActivities && customActivities.length > 0
+  ? customActivities.map(a => `- ${a.title} (${a.duration}, type: ${a.type})`).join('\n')
+  : 'Aucune activité personnalisée sélectionnée'}
 
 Heure actuelle: ${currentHour}:${String(currentMinute).padStart(2, '0')}
 Ville: ${userCity}
@@ -693,7 +713,7 @@ Réponds UNIQUEMENT avec un JSON valide (pas de markdown):
   "location": "Nom du lieu si applicable, ou null"
 }
 
-L'activité doit être cohérente avec le moment de la journée et le type de travail déjà effectué.`
+IMPORTANT: Tiens compte des activités personnalisées sélectionnées pour faire des suggestions cohérentes et complémentaires. L'activité doit être adaptée au moment de la journée et au type de travail déjà effectué.`
 
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
