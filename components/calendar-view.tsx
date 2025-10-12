@@ -219,94 +219,82 @@ export function CalendarView() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
-      {/* En-tête */}
-      <div className="space-y-2">
-        <h1 className="text-4xl font-semibold tracking-tight">Calendrier des projets</h1>
-        <p className="text-muted-foreground font-normal">
-          Vue chronologique de tous vos projets
-        </p>
-      </div>
+    <div className="flex gap-4 h-[calc(100vh-10rem)] overflow-hidden">
+      {/* Sidebar gauche - Liste des projets */}
+      <aside className="w-52 shrink-0 space-y-1 overflow-y-auto pr-2">
+        {projects.map(project => (
+          <label
+            key={project.id}
+            className="flex items-center gap-2 p-1.5 rounded border border-border hover:border-accent/50 cursor-pointer transition-colors"
+          >
+            <Checkbox
+              checked={visibleProjects.has(project.id)}
+              onCheckedChange={() => toggleProjectVisibility(project.id)}
+              className="h-3 w-3"
+            />
+            <div
+              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+              style={{ backgroundColor: project.color }}
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-normal truncate leading-tight">{project.title}</p>
+            </div>
+          </label>
+        ))}
+      </aside>
 
-      {/* Légende des projets */}
-      <Card className="p-6 border-border bg-card/50 backdrop-blur-sm">
-        <h3 className="text-lg font-medium mb-4">Projets affichés</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {projects.map(project => (
-            <label
-              key={project.id}
-              className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-accent/50 cursor-pointer transition-colors"
-            >
-              <Checkbox
-                checked={visibleProjects.has(project.id)}
-                onCheckedChange={() => toggleProjectVisibility(project.id)}
-              />
-              <div
-                className="w-4 h-4 rounded-full flex-shrink-0"
-                style={{ backgroundColor: project.color }}
-              />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-normal truncate">{project.title}</p>
-                {project.category && (
-                  <p className="text-xs text-muted-foreground">{project.category}</p>
-                )}
-              </div>
-            </label>
-          ))}
-        </div>
-      </Card>
-
-      {/* Calendrier */}
-      <Card className="p-6 border-border bg-card/50 backdrop-blur-sm">
+      {/* Calendrier principal */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <Card className="p-4 border-border bg-card/50 backdrop-blur-sm flex-1 flex flex-col overflow-hidden">
         {/* Barre d'outils */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-1">
             <Button
               variant={mode === "month" ? "default" : "outline"}
               size="sm"
               onClick={() => setMode("month")}
-              className="font-normal"
+              className="font-normal h-7 text-xs px-2"
             >
-              <CalendarIcon className="h-4 w-4 mr-2" />
+              <CalendarIcon className="h-3 w-3 mr-1" />
               Mois
             </Button>
             <Button
               variant={mode === "week" ? "default" : "outline"}
               size="sm"
               onClick={() => setMode("week")}
-              className="font-normal"
+              className="font-normal h-7 text-xs px-2"
             >
-              <CalendarDays className="h-4 w-4 mr-2" />
+              <CalendarDays className="h-3 w-3 mr-1" />
               Semaine
             </Button>
           </div>
-          <h2 className="text-2xl font-medium capitalize">
+          <h2 className="text-lg font-medium capitalize">
             {mode === "month" ? monthName : weekRange}
           </h2>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => mode === "month" ? changeMonth(-1) : changeWeek(-1)}
-              className="font-normal"
+              className="font-normal h-7 w-7 p-0"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-3 w-3" />
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => mode === "month" ? changeMonth(1) : changeWeek(1)}
-              className="font-normal"
+              className="font-normal h-7 w-7 p-0"
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-3 w-3" />
             </Button>
           </div>
         </div>
 
         {/* Jours de la semaine */}
-        <div className="grid grid-cols-7 gap-2 mb-2">
+        <div className="grid grid-cols-7 gap-1 mb-1">
           {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(day => (
-            <div key={day} className="text-center text-sm font-medium text-muted-foreground py-2">
+            <div key={day} className="text-center text-[10px] font-medium text-muted-foreground py-1">
               {day}
             </div>
           ))}
@@ -314,10 +302,10 @@ export function CalendarView() {
 
         {/* Grille du calendrier - Vue Mois */}
         {mode === "month" && (
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-7 gap-0.5 flex-1 min-h-0">
             {calendarDays.map((day, index) => {
               if (!day) {
-                return <div key={`empty-${index}`} className="aspect-square" />
+                return <div key={`empty-${index}`} className="h-16" />
               }
 
               const dateStr = day.toISOString().split('T')[0]
@@ -327,39 +315,39 @@ export function CalendarView() {
               return (
                 <div
                   key={dateStr}
-                  className={`aspect-square border border-border rounded-lg p-2 transition-all ${
+                  className={`h-16 border border-border rounded p-0.5 transition-all ${
                     isToday ? 'border-accent bg-accent/5' : 'bg-background/50'
                   } ${events.length > 0 ? 'cursor-pointer hover:border-accent/50' : ''}`}
                 >
                   <div className="h-full flex flex-col">
-                    <span className={`text-sm font-normal mb-1 ${isToday ? 'text-accent font-semibold' : 'text-muted-foreground'}`}>
+                    <span className={`text-[9px] font-normal leading-none mb-0.5 ${isToday ? 'text-accent font-semibold' : 'text-muted-foreground'}`}>
                       {day.getDate()}
                     </span>
-                    <div className="flex-1 space-y-1 overflow-hidden">
+                    <div className="flex-1 space-y-0.5 overflow-hidden">
                       {events.map((event, idx) => {
-                        if (idx >= 3) return null // Limiter à 3 événements visibles
+                        if (idx >= 2) return null // Limiter à 2 événements visibles
 
                         return (
                           <div
                             key={`${event.projectId}-${idx}`}
-                            className="text-xs rounded px-1 py-0.5 truncate"
+                            className="text-[8px] rounded px-0.5 py-0.5 truncate leading-none"
                             style={{
                               backgroundColor: `${event.color}20`,
                               color: event.color,
-                              borderLeft: `3px solid ${event.color}`
+                              borderLeft: `2px solid ${event.color}`
                             }}
                             title={`${event.projectTitle} - ${event.type === 'start' ? 'Début' : event.type === 'deadline' ? 'Échéance' : ''}`}
                           >
                             {event.type === 'start' && '▶ '}
                             {event.type === 'deadline' && '🏁 '}
                             {event.type === 'duration' && '—'}
-                            <span className="ml-1">{event.projectTitle}</span>
+                            <span className="ml-0.5">{event.projectTitle}</span>
                           </div>
                         )
                       })}
-                      {events.length > 3 && (
-                        <div className="text-xs text-muted-foreground">
-                          +{events.length - 3} autre{events.length - 3 > 1 ? 's' : ''}
+                      {events.length > 2 && (
+                        <div className="text-[8px] text-muted-foreground leading-none">
+                          +{events.length - 2}
                         </div>
                       )}
                     </div>
@@ -372,60 +360,55 @@ export function CalendarView() {
 
         {/* Grille du calendrier - Vue Semaine */}
         {mode === "week" && (
-          <div className="space-y-2">
-            <div className="grid grid-cols-7 gap-3">
+          <div className="flex-1 min-h-0">
+            <div className="grid grid-cols-7 gap-1.5 h-full">
               {weekDays.map(day => {
                 const dateStr = day.toISOString().split('T')[0]
                 const events = getEventsForDay(day)
                 const isToday = dateStr === today
 
                 return (
-                  <div key={dateStr} className="space-y-2">
+                  <div key={dateStr} className="flex flex-col min-h-0">
                     {/* En-tête du jour */}
-                    <div className={`text-center p-3 rounded-lg border border-border ${
+                    <div className={`text-center p-1.5 rounded border border-border mb-1 ${
                       isToday ? 'border-accent bg-accent/5' : 'bg-background/50'
                     }`}>
-                      <div className="text-xs text-muted-foreground font-normal">
+                      <div className="text-[9px] text-muted-foreground font-normal">
                         {day.toLocaleDateString('fr-FR', { weekday: 'short' })}
                       </div>
-                      <div className={`text-2xl font-normal ${isToday ? 'text-accent font-semibold' : ''}`}>
+                      <div className={`text-lg font-normal leading-tight ${isToday ? 'text-accent font-semibold' : ''}`}>
                         {day.getDate()}
                       </div>
-                      <div className="text-xs text-muted-foreground font-normal">
+                      <div className="text-[9px] text-muted-foreground font-normal">
                         {day.toLocaleDateString('fr-FR', { month: 'short' })}
                       </div>
                     </div>
 
                     {/* Événements du jour */}
-                    <div className="space-y-2 min-h-[300px]">
+                    <div className="flex-1 space-y-1 overflow-y-auto min-h-0">
                       {events.length === 0 ? (
-                        <div className="text-center text-xs text-muted-foreground py-4">
+                        <div className="text-center text-[9px] text-muted-foreground py-2">
                           Aucun événement
                         </div>
                       ) : (
                         events.map((event, idx) => (
                           <div
                             key={`${event.projectId}-${idx}`}
-                            className="text-sm rounded-lg p-3 cursor-pointer hover:opacity-80 transition-opacity"
+                            className="text-[10px] rounded p-1.5 cursor-pointer hover:opacity-80 transition-opacity"
                             style={{
                               backgroundColor: `${event.color}15`,
-                              borderLeft: `4px solid ${event.color}`
+                              borderLeft: `2px solid ${event.color}`
                             }}
                             onClick={() => router.push(`/projet/${event.projectId}`)}
                           >
-                            <div className="font-medium mb-1" style={{ color: event.color }}>
+                            <div className="font-medium mb-0.5 leading-tight" style={{ color: event.color }}>
                               {event.type === 'start' && '▶ Début'}
                               {event.type === 'deadline' && '🏁 Échéance'}
                               {event.type === 'duration' && '— En cours'}
                             </div>
-                            <div className="text-xs font-normal text-foreground">
+                            <div className="text-[9px] font-normal text-foreground leading-tight">
                               {event.projectTitle}
                             </div>
-                            {event.projectCategory && (
-                              <div className="text-xs text-muted-foreground mt-1">
-                                {event.projectCategory}
-                              </div>
-                            )}
                           </div>
                         ))
                       )}
@@ -436,25 +419,26 @@ export function CalendarView() {
             </div>
           </div>
         )}
-      </Card>
 
-      {/* Légende */}
-      <Card className="p-4 border-border bg-card/50 backdrop-blur-sm">
-        <div className="flex items-center gap-6 text-sm font-normal text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <span>▶</span>
-            <span>Début du projet</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span>🏁</span>
-            <span>Échéance</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span>—</span>
-            <span>Durée du projet</span>
+        {/* Légende */}
+        <div className="mt-2 pt-2 border-t border-border shrink-0">
+          <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <span>▶</span>
+              <span>Début</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span>🏁</span>
+              <span>Échéance</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span>—</span>
+              <span>Durée</span>
+            </div>
           </div>
         </div>
       </Card>
+      </div>
     </div>
   )
 }
