@@ -222,20 +222,20 @@ export function CalendarView() {
     <div className="max-w-7xl mx-auto space-y-8">
       {/* En-tête */}
       <div className="space-y-2">
-        <h1 className="text-4xl font-light tracking-tight">Calendrier des projets</h1>
-        <p className="text-muted-foreground font-light">
+        <h1 className="text-4xl font-semibold tracking-tight">Calendrier des projets</h1>
+        <p className="text-muted-foreground font-normal">
           Vue chronologique de tous vos projets
         </p>
       </div>
 
       {/* Légende des projets */}
-      <Card className="p-6 border-border/50 bg-card/50 backdrop-blur-sm">
-        <h3 className="text-lg font-light mb-4">Projets affichés</h3>
+      <Card className="p-6 border-border bg-card/50 backdrop-blur-sm">
+        <h3 className="text-lg font-medium mb-4">Projets affichés</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {projects.map(project => (
             <label
               key={project.id}
-              className="flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:border-accent/50 cursor-pointer transition-colors"
+              className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-accent/50 cursor-pointer transition-colors"
             >
               <Checkbox
                 checked={visibleProjects.has(project.id)}
@@ -246,7 +246,7 @@ export function CalendarView() {
                 style={{ backgroundColor: project.color }}
               />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-light truncate">{project.title}</p>
+                <p className="text-sm font-normal truncate">{project.title}</p>
                 {project.category && (
                   <p className="text-xs text-muted-foreground">{project.category}</p>
                 )}
@@ -257,7 +257,7 @@ export function CalendarView() {
       </Card>
 
       {/* Calendrier */}
-      <Card className="p-6 border-border/50 bg-card/50 backdrop-blur-sm">
+      <Card className="p-6 border-border bg-card/50 backdrop-blur-sm">
         {/* Barre d'outils */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
@@ -265,7 +265,7 @@ export function CalendarView() {
               variant={mode === "month" ? "default" : "outline"}
               size="sm"
               onClick={() => setMode("month")}
-              className="font-light"
+              className="font-normal"
             >
               <CalendarIcon className="h-4 w-4 mr-2" />
               Mois
@@ -274,13 +274,13 @@ export function CalendarView() {
               variant={mode === "week" ? "default" : "outline"}
               size="sm"
               onClick={() => setMode("week")}
-              className="font-light"
+              className="font-normal"
             >
               <CalendarDays className="h-4 w-4 mr-2" />
               Semaine
             </Button>
           </div>
-          <h2 className="text-2xl font-light capitalize">
+          <h2 className="text-2xl font-medium capitalize">
             {mode === "month" ? monthName : weekRange}
           </h2>
           <div className="flex items-center gap-2">
@@ -288,7 +288,7 @@ export function CalendarView() {
               variant="ghost"
               size="sm"
               onClick={() => mode === "month" ? changeMonth(-1) : changeWeek(-1)}
-              className="font-light"
+              className="font-normal"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -296,7 +296,7 @@ export function CalendarView() {
               variant="ghost"
               size="sm"
               onClick={() => mode === "month" ? changeMonth(1) : changeWeek(1)}
-              className="font-light"
+              className="font-normal"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -306,7 +306,7 @@ export function CalendarView() {
         {/* Jours de la semaine */}
         <div className="grid grid-cols-7 gap-2 mb-2">
           {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(day => (
-            <div key={day} className="text-center text-sm font-light text-muted-foreground py-2">
+            <div key={day} className="text-center text-sm font-medium text-muted-foreground py-2">
               {day}
             </div>
           ))}
@@ -327,12 +327,12 @@ export function CalendarView() {
               return (
                 <div
                   key={dateStr}
-                  className={`aspect-square border border-border/50 rounded-lg p-2 transition-all ${
+                  className={`aspect-square border border-border rounded-lg p-2 transition-all ${
                     isToday ? 'border-accent bg-accent/5' : 'bg-background/50'
                   } ${events.length > 0 ? 'cursor-pointer hover:border-accent/50' : ''}`}
                 >
                   <div className="h-full flex flex-col">
-                    <span className={`text-sm font-light mb-1 ${isToday ? 'text-accent font-medium' : 'text-muted-foreground'}`}>
+                    <span className={`text-sm font-normal mb-1 ${isToday ? 'text-accent font-semibold' : 'text-muted-foreground'}`}>
                       {day.getDate()}
                     </span>
                     <div className="flex-1 space-y-1 overflow-hidden">
@@ -382,16 +382,16 @@ export function CalendarView() {
                 return (
                   <div key={dateStr} className="space-y-2">
                     {/* En-tête du jour */}
-                    <div className={`text-center p-3 rounded-lg border border-border/50 ${
+                    <div className={`text-center p-3 rounded-lg border border-border ${
                       isToday ? 'border-accent bg-accent/5' : 'bg-background/50'
                     }`}>
-                      <div className="text-xs text-muted-foreground font-light">
+                      <div className="text-xs text-muted-foreground font-normal">
                         {day.toLocaleDateString('fr-FR', { weekday: 'short' })}
                       </div>
-                      <div className={`text-2xl font-light ${isToday ? 'text-accent font-medium' : ''}`}>
+                      <div className={`text-2xl font-normal ${isToday ? 'text-accent font-semibold' : ''}`}>
                         {day.getDate()}
                       </div>
-                      <div className="text-xs text-muted-foreground font-light">
+                      <div className="text-xs text-muted-foreground font-normal">
                         {day.toLocaleDateString('fr-FR', { month: 'short' })}
                       </div>
                     </div>
@@ -413,12 +413,12 @@ export function CalendarView() {
                             }}
                             onClick={() => router.push(`/projet/${event.projectId}`)}
                           >
-                            <div className="font-light mb-1" style={{ color: event.color }}>
+                            <div className="font-medium mb-1" style={{ color: event.color }}>
                               {event.type === 'start' && '▶ Début'}
                               {event.type === 'deadline' && '🏁 Échéance'}
                               {event.type === 'duration' && '— En cours'}
                             </div>
-                            <div className="text-xs font-light text-foreground">
+                            <div className="text-xs font-normal text-foreground">
                               {event.projectTitle}
                             </div>
                             {event.projectCategory && (
@@ -439,8 +439,8 @@ export function CalendarView() {
       </Card>
 
       {/* Légende */}
-      <Card className="p-4 border-border/50 bg-card/50 backdrop-blur-sm">
-        <div className="flex items-center gap-6 text-sm font-light text-muted-foreground">
+      <Card className="p-4 border-border bg-card/50 backdrop-blur-sm">
+        <div className="flex items-center gap-6 text-sm font-normal text-muted-foreground">
           <div className="flex items-center gap-2">
             <span>▶</span>
             <span>Début du projet</span>

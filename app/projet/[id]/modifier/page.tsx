@@ -251,7 +251,7 @@ export default function EditProjectPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
-          <h2 className="text-2xl font-light">Projet introuvable</h2>
+          <h2 className="text-2xl font-medium">Projet introuvable</h2>
           <Button onClick={() => router.push("/")} variant="outline">
             Retour à l'accueil
           </Button>
@@ -262,15 +262,15 @@ export default function EditProjectPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="border-b border-border/50 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
+      <header className="border-b border-border backdrop-blur-sm sticky top-0 z-50 bg-background/80">
         <div className="container mx-auto px-6 py-6 flex items-center justify-between">
-          <Button variant="ghost" className="font-light" onClick={() => router.back()}>
+          <Button variant="ghost" className="font-medium" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Annuler
           </Button>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Button onClick={saveProject} disabled={saving} className="font-light">
+            <Button onClick={saveProject} disabled={saving} className="font-normal">
               {saving ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -290,19 +290,19 @@ export default function EditProjectPage() {
       <main className="flex-1 container mx-auto px-6 py-12">
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="space-y-2">
-            <h1 className="text-4xl font-light tracking-tight">Modifier le projet</h1>
-            <p className="text-muted-foreground font-light">
+            <h1 className="text-4xl font-semibold tracking-tight">Modifier le projet</h1>
+            <p className="text-muted-foreground font-normal">
               Modifiez les informations et réorganisez les étapes de votre projet.
             </p>
           </div>
 
           {/* Informations du projet */}
-          <Card className="p-6 border-border/50 bg-card/50 backdrop-blur-sm space-y-6">
-            <h3 className="text-xl font-light">Informations générales</h3>
+          <Card className="p-6 border-border bg-card/50 backdrop-blur-sm space-y-6">
+            <h3 className="text-xl font-medium">Informations générales</h3>
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="title" className="font-light">
+                <Label htmlFor="title" className="font-normal">
                   Titre
                 </Label>
                 <Input
@@ -314,7 +314,7 @@ export default function EditProjectPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description" className="font-light">
+                <Label htmlFor="description" className="font-normal">
                   Description
                 </Label>
                 <Textarea
@@ -327,7 +327,7 @@ export default function EditProjectPage() {
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="category" className="font-light">
+                  <Label htmlFor="category" className="font-normal">
                     Catégorie
                   </Label>
                   <Input
@@ -339,7 +339,7 @@ export default function EditProjectPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="start_date" className="font-light">
+                    <Label htmlFor="start_date" className="font-normal">
                       Date de début
                     </Label>
                     <Input
@@ -351,7 +351,7 @@ export default function EditProjectPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="deadline" className="font-light">
+                    <Label htmlFor="deadline" className="font-normal">
                       Date de fin / Deadline
                     </Label>
                     <Input
@@ -370,9 +370,9 @@ export default function EditProjectPage() {
           {/* Gestion des étapes */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-light">Étapes du projet</h3>
+              <h3 className="text-xl font-medium">Étapes du projet</h3>
               <div className="flex items-center gap-2">
-                <Button onClick={generateSteps} disabled={generating} variant="outline" size="sm" className="font-light">
+                <Button onClick={generateSteps} disabled={generating} variant="outline" size="sm" className="font-normal">
                   {generating ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -396,13 +396,13 @@ export default function EditProjectPage() {
               {project.project_steps.map((step, index) => (
                 <Card
                   key={step.id}
-                  className="p-4 border-border/50 bg-card/50 backdrop-blur-sm"
+                  className="p-4 border-border bg-card/50 backdrop-blur-sm"
                 >
                   {editingStepId === step.id ? (
                     // Mode édition
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-light text-muted-foreground">
+                        <span className="text-sm font-medium text-muted-foreground">
                           Étape {index + 1} - Édition
                         </span>
                         <div className="flex gap-1">
@@ -477,18 +477,18 @@ export default function EditProjectPage() {
 
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-light text-muted-foreground">
+                          <span className="text-xs font-medium text-muted-foreground">
                             Étape {index + 1}
                           </span>
                           {step.estimated_duration && (
-                            <span className="text-xs font-light text-muted-foreground">
+                            <span className="text-xs font-medium text-muted-foreground">
                               • {step.estimated_duration}
                             </span>
                           )}
                         </div>
-                        <h4 className="font-light">{step.title}</h4>
+                        <h4 className="font-normal">{step.title}</h4>
                         {step.description && (
-                          <p className="text-sm text-muted-foreground font-light">
+                          <p className="text-sm text-muted-foreground font-normal">
                             {step.description}
                           </p>
                         )}
@@ -518,7 +518,7 @@ export default function EditProjectPage() {
               ))}
 
               {project.project_steps.length === 0 && (
-                <div className="text-center py-12 text-muted-foreground font-light">
+                <div className="text-center py-12 text-muted-foreground font-normal">
                   <p>Aucune étape. Ajoutez-en une pour commencer.</p>
                 </div>
               )}

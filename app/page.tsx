@@ -83,16 +83,16 @@ export default function Home() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground font-light">Chargement...</p>
+        <p className="text-muted-foreground font-normal">Chargement...</p>
       </div>
     )
   }
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="border-b border-border/50 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
+      <header className="border-b border-border backdrop-blur-sm sticky top-0 z-50 bg-background/80">
         <div className="container mx-auto px-6 py-6 flex items-center justify-between">
-          <h1 className="text-2xl font-light tracking-tight text-balance">Life Architect</h1>
+          <h1 className="text-2xl font-medium tracking-tight text-balance">Life Architect</h1>
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <Button variant="ghost" size="icon" className="rounded-full" onClick={() => router.push("/nouveau-projet")}>
@@ -113,32 +113,32 @@ export default function Home() {
           <div className="space-y-16 max-w-4xl mx-auto">
             {/* Hero section */}
             <section className="space-y-4 max-w-2xl mx-auto">
-              <h2 className="text-5xl font-light tracking-tight text-balance leading-tight">Bonjour</h2>
-              <p className="text-lg text-muted-foreground font-light leading-relaxed">
+              <h2 className="text-5xl font-semibold tracking-tight text-balance leading-tight">Bonjour</h2>
+              <p className="text-lg text-muted-foreground font-normal leading-relaxed">
                 Votre espace pour architecturer votre vie, un objectif à la fois.
               </p>
             </section>
 
             {/* Quick stats */}
             <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="p-8 border-border/50 bg-card/50 backdrop-blur-sm">
+              <Card className="p-8 border-border bg-card/50 backdrop-blur-sm">
                 <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground font-light">Projets actifs</p>
-                  <p className="text-4xl font-light">{stats.activeProjects}</p>
+                  <p className="text-sm text-muted-foreground font-normal">Projets actifs</p>
+                  <p className="text-4xl font-semibold">{stats.activeProjects}</p>
                 </div>
               </Card>
-              <Card className="p-8 border-border/50 bg-card/50 backdrop-blur-sm">
+              <Card className="p-8 border-border bg-card/50 backdrop-blur-sm">
                 <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground font-light">Tâches aujourd'hui</p>
-                  <p className="text-4xl font-light">
+                  <p className="text-sm text-muted-foreground font-normal">Tâches aujourd'hui</p>
+                  <p className="text-4xl font-semibold">
                     {stats.completedToday}<span className="text-xl text-muted-foreground">/{stats.tasksToday}</span>
                   </p>
                 </div>
               </Card>
-              <Card className="p-8 border-border/50 bg-card/50 backdrop-blur-sm">
+              <Card className="p-8 border-border bg-card/50 backdrop-blur-sm">
                 <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground font-light">Progression globale</p>
-                  <p className="text-4xl font-light">
+                  <p className="text-sm text-muted-foreground font-normal">Progression globale</p>
+                  <p className="text-4xl font-semibold">
                     {stats.progressPercentage}<span className="text-xl text-muted-foreground">%</span>
                   </p>
                 </div>
@@ -149,7 +149,7 @@ export default function Home() {
             {projectsPreview.length > 0 && (
               <section className="space-y-8">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-2xl font-light tracking-tight">Projets en cours</h3>
+                  <h3 className="text-2xl font-medium tracking-tight">Projets en cours</h3>
                   <Button
                     variant="ghost"
                     className="text-accent hover:text-accent/80"
@@ -175,16 +175,16 @@ export default function Home() {
             {/* Empty state */}
             {projectsPreview.length === 0 && (
               <section className="max-w-2xl mx-auto">
-                <Card className="p-12 border-border/50 bg-card/50 backdrop-blur-sm text-center">
+                <Card className="p-12 border-border bg-card/50 backdrop-blur-sm text-center">
                   <div className="space-y-4">
                     <FolderKanban className="h-12 w-12 text-muted-foreground mx-auto" />
                     <div className="space-y-2">
-                      <h3 className="text-xl font-light">Aucun projet pour le moment</h3>
-                      <p className="text-sm text-muted-foreground font-light">
+                      <h3 className="text-xl font-medium">Aucun projet pour le moment</h3>
+                      <p className="text-sm text-muted-foreground font-normal">
                         Créez votre premier projet pour commencer à organiser vos objectifs.
                       </p>
                     </div>
-                    <Button onClick={() => router.push("/nouveau-projet")} className="font-light">
+                    <Button onClick={() => router.push("/nouveau-projet")} className="font-normal">
                       <Plus className="h-4 w-4 mr-2" />
                       Créer un projet
                     </Button>
@@ -202,7 +202,7 @@ export default function Home() {
         {currentView === "calendar" && <CalendarView />}
       </main>
 
-      <nav className="border-t border-border/50 backdrop-blur-sm sticky bottom-0 bg-background/80">
+      <nav className="border-t border-border backdrop-blur-sm sticky bottom-0 bg-background/80">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-around max-w-4xl mx-auto">
             <Button

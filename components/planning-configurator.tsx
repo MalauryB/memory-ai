@@ -146,8 +146,8 @@ export function PlanningConfigurator({ onGenerate, loading }: PlanningConfigurat
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-light">Configuration du planning</DialogTitle>
-          <DialogDescription className="font-light">
+          <DialogTitle className="text-2xl font-medium">Configuration du planning</DialogTitle>
+          <DialogDescription className="font-normal">
             Personnalisez votre journée selon votre niveau d'énergie et vos préférences
           </DialogDescription>
         </DialogHeader>
@@ -156,8 +156,8 @@ export function PlanningConfigurator({ onGenerate, loading }: PlanningConfigurat
           {/* Intensité */}
           <div className="space-y-4">
             <div>
-              <h3 className="font-light text-lg mb-2">Intensité de la journée</h3>
-              <p className="text-sm text-muted-foreground font-light">
+              <h3 className="font-medium text-lg mb-2">Intensité de la journée</h3>
+              <p className="text-sm text-muted-foreground font-normal">
                 Ajustez la charge de travail selon votre motivation
               </p>
             </div>
@@ -193,8 +193,8 @@ export function PlanningConfigurator({ onGenerate, loading }: PlanningConfigurat
           {/* Style de planification */}
           <div className="space-y-4">
             <div>
-              <h3 className="font-light text-lg mb-2">Style de planification</h3>
-              <p className="text-sm text-muted-foreground font-light">
+              <h3 className="font-medium text-lg mb-2">Style de planification</h3>
+              <p className="text-sm text-muted-foreground font-normal">
                 Organisez vos tâches par thème ou variez les activités
               </p>
             </div>
@@ -218,14 +218,14 @@ export function PlanningConfigurator({ onGenerate, loading }: PlanningConfigurat
           {/* Activités personnalisées */}
           <div className="space-y-4">
             <div>
-              <h3 className="font-light text-lg mb-2">Activités à inclure</h3>
-              <p className="text-sm text-muted-foreground font-light">
+              <h3 className="font-medium text-lg mb-2">Activités à inclure</h3>
+              <p className="text-sm text-muted-foreground font-normal">
                 Sélectionnez des activités personnelles à ajouter à votre planning
               </p>
             </div>
 
             {loadingActivities ? (
-              <div className="text-center py-4 text-sm text-muted-foreground font-light">
+              <div className="text-center py-4 text-sm text-muted-foreground font-normal">
                 Chargement...
               </div>
             ) : (
@@ -238,7 +238,7 @@ export function PlanningConfigurator({ onGenerate, loading }: PlanningConfigurat
                         className="relative group"
                       >
                         <label
-                          className="flex items-start gap-3 p-3 rounded-lg border border-border/50 hover:border-accent/50 cursor-pointer transition-colors"
+                          className="flex items-start gap-3 p-3 rounded-lg border border-border hover:border-accent/50 cursor-pointer transition-colors"
                         >
                           <Checkbox
                             checked={selectedActivities.includes(activity.id)}
@@ -247,9 +247,9 @@ export function PlanningConfigurator({ onGenerate, loading }: PlanningConfigurat
                           />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <p className="font-light text-sm">{activity.title}</p>
+                              <p className="font-normal text-sm">{activity.title}</p>
                               {activity.can_combine_with?.length > 0 && (
-                                <Badge variant="outline" className="text-xs font-light">
+                                <Badge variant="outline" className="text-xs font-normal">
                                   Combinable
                                 </Badge>
                               )}
@@ -270,7 +270,7 @@ export function PlanningConfigurator({ onGenerate, loading }: PlanningConfigurat
                         </label>
                         <button
                           onClick={(e) => deleteActivity(activity.id, e)}
-                          className="absolute top-2 right-2 p-1 rounded-md bg-background/80 backdrop-blur-sm border border-border/50 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive hover:text-destructive-foreground hover:border-destructive"
+                          className="absolute top-2 right-2 p-1 rounded-md bg-background/80 backdrop-blur-sm border border-border opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive hover:text-destructive-foreground hover:border-destructive"
                           title="Supprimer cette activité"
                         >
                           <X className="h-3 w-3" />
@@ -288,14 +288,14 @@ export function PlanningConfigurator({ onGenerate, loading }: PlanningConfigurat
                       value={newActivityTitle}
                       onChange={(e) => setNewActivityTitle(e.target.value)}
                       autoFocus
-                      className="font-light"
+                      className="font-medium"
                     />
                     <div className="flex gap-2">
                       <div className="flex-1">
                         <select
                           value={newActivityDuration}
                           onChange={(e) => setNewActivityDuration(e.target.value)}
-                          className="w-full h-9 px-3 rounded-md border border-input bg-background font-light text-sm"
+                          className="w-full h-9 px-3 rounded-md border border-input bg-background font-normal text-sm"
                         >
                           <option value="15min">15 min</option>
                           <option value="30min">30 min</option>
@@ -338,23 +338,23 @@ export function PlanningConfigurator({ onGenerate, loading }: PlanningConfigurat
             <div className="flex items-start gap-3">
               <Sparkles className="h-5 w-5 text-accent mt-0.5" />
               <div className="flex-1 space-y-2">
-                <p className="text-sm font-light">
+                <p className="text-sm font-medium">
                   <strong className="font-medium">Votre configuration :</strong>
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary" className="font-light">
+                  <Badge variant="secondary" className="font-normal">
                     Intensité {intensity === 'light' ? 'légère' : intensity === 'moderate' ? 'modérée' : 'intense'}
                   </Badge>
-                  <Badge variant="secondary" className="font-light">
+                  <Badge variant="secondary" className="font-normal">
                     Style {style === 'mixed' ? 'mixte' : 'en blocs'}
                   </Badge>
                   {selectedActivities.length > 0 && (
-                    <Badge variant="secondary" className="font-light">
+                    <Badge variant="secondary" className="font-normal">
                       {selectedActivities.length} activité{selectedActivities.length > 1 ? 's' : ''}
                     </Badge>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground font-light pt-2">
+                <p className="text-xs text-muted-foreground font-normal pt-2">
                   💡 Le système suggérera automatiquement des activités relaxantes adaptées
                 </p>
               </div>
@@ -400,8 +400,8 @@ function IntensityCard({ icon, title, description, color, selected, onClick }: I
           )}
         </div>
         <div className="space-y-1">
-          <h4 className="font-light text-sm">{title}</h4>
-          <p className="text-xs text-muted-foreground font-light leading-relaxed">
+          <h4 className="font-medium text-sm">{title}</h4>
+          <p className="text-xs text-muted-foreground font-normal leading-relaxed">
             {description}
           </p>
         </div>
@@ -424,17 +424,17 @@ function StyleCard({ title, description, selected, onClick }: StyleCardProps) {
       className={`relative p-4 rounded-lg border-2 transition-all text-left ${
         selected
           ? 'border-accent bg-accent/10 ring-2 ring-accent ring-offset-2 ring-offset-background'
-          : 'border-border/50 bg-card/50 hover:border-accent/50'
+          : 'border-border bg-card/50 hover:border-accent/50'
       }`}
     >
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <h4 className="font-light">{title}</h4>
+          <h4 className="font-normal">{title}</h4>
           {selected && (
             <div className="h-2 w-2 rounded-full bg-accent"></div>
           )}
         </div>
-        <p className="text-xs text-muted-foreground font-light leading-relaxed">
+        <p className="text-xs text-muted-foreground font-normal leading-relaxed">
           {description}
         </p>
       </div>

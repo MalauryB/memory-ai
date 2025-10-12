@@ -132,7 +132,7 @@ export function DailyPlanner() {
     return (
       <div className="space-y-12 max-w-4xl mx-auto">
         <div className="space-y-4">
-          <h2 className="text-4xl font-light tracking-tight text-balance">Planning du jour</h2>
+          <h2 className="text-4xl font-semibold tracking-tight text-balance">Planning du jour</h2>
         </div>
         <div className="flex items-center justify-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -146,8 +146,8 @@ export function DailyPlanner() {
       <div className="space-y-4">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-4xl font-light tracking-tight text-balance">Planning du jour</h2>
-            <p className="text-lg text-muted-foreground font-light leading-relaxed mt-2">
+            <h2 className="text-4xl font-semibold tracking-tight text-balance">Planning du jour</h2>
+            <p className="text-lg text-muted-foreground font-normal leading-relaxed mt-2">
               Aujourd'hui, {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
             </p>
           </div>
@@ -157,21 +157,21 @@ export function DailyPlanner() {
         </div>
 
         {tasks.length > 0 && (
-          <p className="text-sm text-muted-foreground font-light">
+          <p className="text-sm text-muted-foreground font-medium">
             {tasks.filter(t => t.completed).length} / {tasks.length} tâches terminées
           </p>
         )}
       </div>
 
       {tasks.length === 0 ? (
-        <Card className="p-12 border-border/50 bg-card/50 backdrop-blur-sm">
+        <Card className="p-12 border-border bg-card/50 backdrop-blur-sm">
           <div className="text-center space-y-6">
             <div className="flex justify-center">
               <Sparkles className="h-16 w-16 text-accent" />
             </div>
             <div className="space-y-2">
-              <h3 className="text-xl font-light">Prêt à planifier votre journée ?</h3>
-              <p className="text-sm text-muted-foreground font-light max-w-md mx-auto">
+              <h3 className="text-xl font-medium">Prêt à planifier votre journée ?</h3>
+              <p className="text-sm text-muted-foreground font-normal max-w-md mx-auto">
                 Générez un planning intelligent adapté à vos projets et votre niveau d'énergie.
               </p>
             </div>
@@ -188,11 +188,11 @@ export function DailyPlanner() {
             return (
               <div key={task.id} className="relative group">
                 <Card
-                  className={`p-6 border-border/50 backdrop-blur-sm transition-all ${
-                    isBreak ? "bg-blue-500/5 border-blue-500/20" :
-                    isSuggestion ? "bg-purple-500/5 border-purple-500/20" :
-                    isCustomActivity ? "bg-green-500/5 border-green-500/20" :
-                    "bg-card/50"
+                  className={`p-6 border backdrop-blur-sm transition-all ${
+                    isBreak ? "bg-blue-500/5 border-blue-500/30" :
+                    isSuggestion ? "bg-purple-500/5 border-purple-500/30" :
+                    isCustomActivity ? "bg-green-500/5 border-green-500/30" :
+                    "bg-card/50 border-border"
                   } ${
                     task.completed ? "opacity-50" : "hover:border-accent/50"
                   }`}
@@ -214,57 +214,57 @@ export function DailyPlanner() {
                     <div className="flex items-start justify-between gap-4">
                       <div className="space-y-1 flex-1">
                         <div className="flex items-center gap-2">
-                          <p className={`font-light text-lg ${task.completed ? "line-through text-muted-foreground" : ""}`}>
+                          <p className={`font-medium text-lg ${task.completed ? "line-through text-muted-foreground" : ""}`}>
                             {task.title}
                           </p>
                           {isSuggestion && (
-                            <Badge variant="secondary" className="font-light text-xs">
+                            <Badge variant="secondary" className="font-normal text-xs">
                               <Lightbulb className="h-3 w-3 mr-1" />
                               Suggestion IA
                             </Badge>
                           )}
                         </div>
                         {task.description && (
-                          <p className="text-sm text-muted-foreground font-light">
+                          <p className="text-sm text-muted-foreground font-normal">
                             {task.description}
                           </p>
                         )}
                         {task.location && (
                           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                             <MapPin className="h-3 w-3" />
-                            <span className="font-light">{task.location.name}</span>
+                            <span className="font-normal">{task.location.name}</span>
                           </div>
                         )}
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground flex-shrink-0">
                         <Clock className="h-4 w-4" />
-                        <span className="text-sm font-light font-mono">{task.scheduledTime}</span>
+                        <span className="text-sm font-medium font-mono">{task.scheduledTime}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-4 text-xs flex-wrap">
                       {task.projectTitle && (
                         <div className="flex items-center gap-1.5 text-muted-foreground">
                           <FolderOpen className="h-3 w-3" />
-                          <span className="font-light">{task.projectTitle}</span>
+                          <span className="font-normal">{task.projectTitle}</span>
                         </div>
                       )}
                       {task.estimatedDuration && (
-                        <span className="text-muted-foreground font-light">
+                        <span className="text-muted-foreground font-normal">
                           • {task.estimatedDuration}
                         </span>
                       )}
                       {task.projectCategory && (
-                        <span className="px-2 py-0.5 rounded-full bg-accent/10 text-accent font-light">
+                        <span className="px-2 py-0.5 rounded-full bg-accent/10 text-accent font-normal">
                           {task.projectCategory}
                         </span>
                       )}
                       {task.itemType === 'tracker' && (
-                        <Badge variant="outline" className="font-light text-xs">
+                        <Badge variant="outline" className="font-normal text-xs">
                           Habitude
                         </Badge>
                       )}
                       {isCustomActivity && (
-                        <Badge variant="outline" className="font-light text-xs border-green-500/30 text-green-600">
+                        <Badge variant="outline" className="font-normal text-xs border-green-500/30 text-green-600">
                           Activité perso
                         </Badge>
                       )}
@@ -274,7 +274,7 @@ export function DailyPlanner() {
                 </Card>
                 <button
                   onClick={() => deleteTask(task.id)}
-                  className="absolute top-4 right-4 p-1.5 rounded-md bg-background/80 backdrop-blur-sm border border-border/50 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive hover:text-destructive-foreground hover:border-destructive"
+                  className="absolute top-4 right-4 p-1.5 rounded-md bg-background/80 backdrop-blur-sm border border-border opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive hover:text-destructive-foreground hover:border-destructive"
                   title="Retirer cette tâche du planning"
                 >
                   <X className="h-4 w-4" />

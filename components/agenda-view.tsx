@@ -130,32 +130,32 @@ export function AgendaView() {
     <div className="max-w-4xl mx-auto space-y-8">
       {/* En-tête */}
       <div className="space-y-2">
-        <h1 className="text-4xl font-light tracking-tight">Prochaines étapes</h1>
-        <p className="text-muted-foreground font-light">
+        <h1 className="text-4xl font-semibold tracking-tight">Prochaines étapes</h1>
+        <p className="text-muted-foreground font-normal">
           Toutes vos étapes à venir, tous projets confondus
         </p>
       </div>
 
       {/* Statistiques */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-6 border-border/50 bg-card/50 backdrop-blur-sm">
+        <Card className="p-6 border-border bg-card/50 backdrop-blur-sm">
           <div className="space-y-1">
-            <p className="text-sm text-muted-foreground font-light">Total d'étapes</p>
-            <p className="text-3xl font-light">{steps.length}</p>
+            <p className="text-sm text-muted-foreground font-medium">Total d'étapes</p>
+            <p className="text-3xl font-normal">{steps.length}</p>
           </div>
         </Card>
-        <Card className="p-6 border-border/50 bg-blue-500/5 border-blue-500/20 backdrop-blur-sm">
+        <Card className="p-6 border-border bg-blue-500/5 border-blue-500/20 backdrop-blur-sm">
           <div className="space-y-1">
-            <p className="text-sm text-blue-500 font-light">En cours</p>
-            <p className="text-3xl font-light text-blue-500">
+            <p className="text-sm text-blue-500 font-medium">En cours</p>
+            <p className="text-3xl font-normal text-blue-500">
               {steps.filter((s) => s.stepStatus === "in_progress").length}
             </p>
           </div>
         </Card>
-        <Card className="p-6 border-border/50 bg-card/50 backdrop-blur-sm">
+        <Card className="p-6 border-border bg-card/50 backdrop-blur-sm">
           <div className="space-y-1">
-            <p className="text-sm text-muted-foreground font-light">À faire</p>
-            <p className="text-3xl font-light">
+            <p className="text-sm text-muted-foreground font-medium">À faire</p>
+            <p className="text-3xl font-normal">
               {steps.filter((s) => s.stepStatus === "pending").length}
             </p>
           </div>
@@ -164,12 +164,12 @@ export function AgendaView() {
 
       {/* Liste des étapes groupées par projet */}
       {Object.keys(groupedSteps).length === 0 ? (
-        <Card className="p-12 border-border/50 bg-card/50 backdrop-blur-sm">
+        <Card className="p-12 border-border bg-card/50 backdrop-blur-sm">
           <div className="text-center space-y-4">
             <CheckCircle2 className="h-12 w-12 mx-auto text-muted-foreground" />
             <div className="space-y-2">
-              <h3 className="text-xl font-light">Aucune étape à venir</h3>
-              <p className="text-muted-foreground font-light">
+              <h3 className="text-xl font-medium">Aucune étape à venir</h3>
+              <p className="text-muted-foreground font-normal">
                 Toutes vos étapes sont terminées ou vous n'avez pas encore de projet.
               </p>
             </div>
@@ -198,17 +198,17 @@ export function AgendaView() {
                 )}
                 <div className="flex-1">
                   <div className="flex items-center gap-3">
-                    <h2 className="text-2xl font-light tracking-tight group-hover:text-accent transition-colors">
+                    <h2 className="text-2xl font-medium tracking-tight group-hover:text-accent transition-colors">
                       {project.title}
                     </h2>
                     {project.category && (
-                      <span className="text-xs px-2 py-1 rounded-full bg-accent/10 text-accent font-light">
+                      <span className="text-xs px-2 py-1 rounded-full bg-accent/10 text-accent font-normal">
                         {project.category}
                       </span>
                     )}
                   </div>
                   {project.deadline && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground font-light mt-1">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground font-normal mt-1">
                       <Calendar className="h-3 w-3" />
                       <span>Échéance : {formatDeadline(project.deadline)}</span>
                     </div>
@@ -222,10 +222,10 @@ export function AgendaView() {
                 {projectSteps.map((step, index) => (
                   <Card
                     key={step.stepId}
-                    className={`p-5 border-border/50 backdrop-blur-sm transition-all cursor-pointer ${
+                    className={`p-5 border backdrop-blur-sm transition-all cursor-pointer ${
                       step.stepStatus === "in_progress"
-                        ? "bg-blue-500/5 border-blue-500/20"
-                        : "bg-card/50"
+                        ? "bg-blue-500/5 border-blue-500/30"
+                        : "bg-card/50 border-border"
                     }`}
                     onClick={() =>
                       updateStepStatus(
@@ -248,7 +248,7 @@ export function AgendaView() {
 
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground font-light">
+                          <span className="text-xs text-muted-foreground font-medium">
                             Étape {step.stepOrderIndex + 1}
                           </span>
                           {step.stepEstimatedDuration && (
@@ -256,23 +256,23 @@ export function AgendaView() {
                               <span className="text-xs text-muted-foreground">•</span>
                               <div className="flex items-center gap-1">
                                 <Clock className="h-3 w-3 text-muted-foreground" />
-                                <span className="text-xs text-muted-foreground font-light">
+                                <span className="text-xs text-muted-foreground font-normal">
                                   {step.stepEstimatedDuration}
                                 </span>
                               </div>
                             </>
                           )}
                         </div>
-                        <h4 className="font-light text-lg">{step.stepTitle}</h4>
+                        <h4 className="font-medium text-lg">{step.stepTitle}</h4>
                         {step.stepDescription && (
-                          <p className="text-sm text-muted-foreground font-light">
+                          <p className="text-sm text-muted-foreground font-normal">
                             {step.stepDescription}
                           </p>
                         )}
                       </div>
 
                       <span
-                        className={`text-xs px-2 py-1 rounded-full font-light whitespace-nowrap self-start ${
+                        className={`text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap self-start ${
                           step.stepStatus === "in_progress"
                             ? "bg-blue-500/20 text-blue-500"
                             : "bg-muted text-muted-foreground"
@@ -289,7 +289,7 @@ export function AgendaView() {
         </div>
       )}
 
-      <p className="text-sm text-muted-foreground font-light text-center pt-4">
+      <p className="text-sm text-muted-foreground font-normal text-center pt-4">
         💡 Cliquez sur une étape pour changer son statut
       </p>
     </div>

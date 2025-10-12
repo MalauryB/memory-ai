@@ -94,12 +94,12 @@ export function TrackersView() {
           <Activity className="h-8 w-8 text-accent" />
         </div>
         <div className="space-y-3">
-          <h3 className="text-2xl font-light tracking-tight">Aucun tracker pour le moment</h3>
-          <p className="text-muted-foreground font-light">
+          <h3 className="text-2xl font-medium tracking-tight">Aucun tracker pour le moment</h3>
+          <p className="text-muted-foreground font-normal">
             Créez votre premier tracker pour suivre vos habitudes et objectifs récurrents.
           </p>
         </div>
-        <Button onClick={handleCreateTracker} className="font-light">
+        <Button onClick={handleCreateTracker} className="font-normal">
           <Plus className="h-4 w-4 mr-2" />
           Créer un tracker
         </Button>
@@ -117,12 +117,12 @@ export function TrackersView() {
       {/* En-tête */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h2 className="text-3xl font-light tracking-tight">Mes trackers</h2>
-          <p className="text-muted-foreground font-light">
+          <h2 className="text-3xl font-semibold tracking-tight">Mes trackers</h2>
+          <p className="text-muted-foreground font-normal">
             {totalActiveTrackers} tracker{totalActiveTrackers > 1 ? "s" : ""} actif{totalActiveTrackers > 1 ? "s" : ""}
           </p>
         </div>
-        <Button onClick={handleCreateTracker} className="font-light">
+        <Button onClick={handleCreateTracker} className="font-normal">
           <Plus className="h-4 w-4 mr-2" />
           Nouveau tracker
         </Button>
@@ -130,29 +130,29 @@ export function TrackersView() {
 
       {/* Statistiques du jour */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl">
-        <div className="p-6 border border-border/50 rounded-lg bg-card/50 backdrop-blur-sm">
+        <div className="p-6 border border-border rounded-lg bg-card/50 backdrop-blur-sm">
           <div className="space-y-2">
-            <p className="text-sm text-muted-foreground font-light">Complétés aujourd'hui</p>
-            <p className="text-3xl font-light">
+            <p className="text-sm text-muted-foreground font-normal">Complétés aujourd'hui</p>
+            <p className="text-3xl font-semibold">
               {totalCompletionsToday}/{totalActiveTrackers}
             </p>
           </div>
         </div>
 
-        <div className="p-6 border border-border/50 rounded-lg bg-card/50 backdrop-blur-sm">
+        <div className="p-6 border border-border rounded-lg bg-card/50 backdrop-blur-sm">
           <div className="space-y-2">
-            <p className="text-sm text-muted-foreground font-light">Taux de complétion</p>
-            <p className="text-3xl font-light">
+            <p className="text-sm text-muted-foreground font-normal">Taux de complétion</p>
+            <p className="text-3xl font-semibold">
               {completionRate}
               <span className="text-lg text-muted-foreground">%</span>
             </p>
           </div>
         </div>
 
-        <div className="p-6 border border-border/50 rounded-lg bg-card/50 backdrop-blur-sm">
+        <div className="p-6 border border-border rounded-lg bg-card/50 backdrop-blur-sm">
           <div className="space-y-2">
-            <p className="text-sm text-muted-foreground font-light">Série la plus longue</p>
-            <p className="text-3xl font-light">{Math.max(...activeTrackers.map((t) => t.best_streak), 0)}</p>
+            <p className="text-sm text-muted-foreground font-normal">Série la plus longue</p>
+            <p className="text-3xl font-semibold">{Math.max(...activeTrackers.map((t) => t.best_streak), 0)}</p>
           </div>
         </div>
       </div>
@@ -160,7 +160,7 @@ export function TrackersView() {
       {/* Liste des trackers à faire aujourd'hui */}
       {todayTrackers.length > 0 && (
         <section className="space-y-4">
-          <h3 className="text-xl font-light tracking-tight">À faire aujourd'hui</h3>
+          <h3 className="text-xl font-medium tracking-tight">À faire aujourd'hui</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {todayTrackers.map((tracker) => (
               <TrackerCard
@@ -178,7 +178,7 @@ export function TrackersView() {
       {/* Liste des trackers complétés aujourd'hui */}
       {completedTrackers.length > 0 && (
         <section className="space-y-4">
-          <h3 className="text-xl font-light tracking-tight text-muted-foreground">Complétés aujourd'hui</h3>
+          <h3 className="text-xl font-medium tracking-tight text-muted-foreground">Complétés aujourd'hui</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {completedTrackers.map((tracker) => (
               <TrackerCard

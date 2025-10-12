@@ -273,27 +273,27 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
       {/* Progress indicator */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-light text-muted-foreground">
+          <p className="text-sm font-medium text-muted-foreground">
             Étape {currentStep} sur {totalSteps}
           </p>
-          <p className="text-sm font-light text-muted-foreground">{Math.round(progressPercentage)}%</p>
+          <p className="text-sm font-medium text-muted-foreground">{Math.round(progressPercentage)}%</p>
         </div>
         <Progress value={progressPercentage} className="h-1" />
       </div>
 
       {/* Step content */}
-      <Card className="p-8 border-border/50 bg-card/50 backdrop-blur-sm">
+      <Card className="p-8 border-border bg-card/50 backdrop-blur-sm">
         <div className="space-y-8">
           {currentStep === 1 && (
             <div className="space-y-6">
               <div className="space-y-2">
-                <h2 className="text-3xl font-light tracking-tight">Nommez votre projet</h2>
-                <p className="text-muted-foreground font-light">
+                <h2 className="text-3xl font-semibold tracking-tight">Nommez votre projet</h2>
+                <p className="text-muted-foreground font-normal">
                   Donnez un titre clair et inspirant à votre projet de vie.
                 </p>
               </div>
               <div className="space-y-3">
-                <Label htmlFor="title" className="font-light">
+                <Label htmlFor="title" className="font-normal">
                   Titre du projet
                 </Label>
                 <Input
@@ -307,7 +307,7 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
 
               {/* Upload d'image */}
               <div className="space-y-3">
-                <Label className="font-light">
+                <Label className="font-normal">
                   Image du projet <span className="text-muted-foreground text-sm">(optionnel)</span>
                 </Label>
                 {imagePreview ? (
@@ -315,7 +315,7 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
                     <img
                       src={imagePreview}
                       alt="Aperçu"
-                      className="w-full h-48 object-cover rounded-lg border border-border/50"
+                      className="w-full h-48 object-cover rounded-lg border border-border"
                     />
                     <Button
                       variant="ghost"
@@ -330,14 +330,14 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
                 ) : (
                   <label
                     htmlFor="image-upload"
-                    className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-border/50 rounded-lg cursor-pointer hover:border-accent/50 transition-colors bg-background/50"
+                    className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-accent/50 transition-colors bg-background/50"
                   >
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                       <Upload className="h-10 w-10 text-muted-foreground mb-3" />
-                      <p className="mb-2 text-sm font-light text-muted-foreground">
+                      <p className="mb-2 text-sm font-medium text-muted-foreground">
                         <span className="font-normal">Cliquez pour ajouter</span> ou glissez une image
                       </p>
-                      <p className="text-xs text-muted-foreground font-light">
+                      <p className="text-xs text-muted-foreground font-normal">
                         PNG, JPG, GIF jusqu'à 5MB
                       </p>
                     </div>
@@ -357,16 +357,16 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
           {currentStep === 2 && (
             <div className="space-y-6">
               <div className="space-y-2">
-                <h2 className="text-3xl font-light tracking-tight">Décrivez votre vision</h2>
-                <p className="text-muted-foreground font-light">
+                <h2 className="text-3xl font-semibold tracking-tight">Décrivez votre vision</h2>
+                <p className="text-muted-foreground font-normal">
                   Plus votre description sera détaillée, plus Claude pourra générer des étapes pertinentes.
                 </p>
               </div>
 
               {/* Questions guides */}
               <div className="p-4 rounded-lg bg-accent/5 border border-accent/20 space-y-3">
-                <p className="text-sm font-light text-accent">💡 Pour vous guider :</p>
-                <ul className="space-y-2 text-sm font-light text-muted-foreground">
+                <p className="text-sm font-medium text-accent">💡 Pour vous guider :</p>
+                <ul className="space-y-2 text-sm font-normal text-muted-foreground">
                   <li>• Pourquoi ce projet est-il important pour vous ?</li>
                   <li>• Qu'est-ce que vous souhaitez accomplir concrètement ?</li>
                   <li>• Quel sera le résultat final que vous visez ?</li>
@@ -375,7 +375,7 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
               </div>
 
               <div className="space-y-3">
-                <Label htmlFor="description" className="font-light">
+                <Label htmlFor="description" className="font-normal">
                   Description détaillée
                 </Label>
                 <Textarea
@@ -385,7 +385,7 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="min-h-[200px] resize-none"
                 />
-                <p className="text-xs text-muted-foreground font-light">
+                <p className="text-xs text-muted-foreground font-normal">
                   {formData.description.length} caractères
                 </p>
               </div>
@@ -395,14 +395,14 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
           {currentStep === 3 && (
             <div className="space-y-6">
               <div className="space-y-2">
-                <h2 className="text-3xl font-light tracking-tight">Informations pratiques</h2>
-                <p className="text-muted-foreground font-light">
+                <h2 className="text-3xl font-semibold tracking-tight">Informations pratiques</h2>
+                <p className="text-muted-foreground font-normal">
                   Catégorisez votre projet et définissez une échéance si vous le souhaitez.
                 </p>
               </div>
               <div className="space-y-6">
                 <div className="space-y-3">
-                  <Label htmlFor="category" className="font-light">
+                  <Label htmlFor="category" className="font-normal">
                     Catégorie
                   </Label>
                   <Input
@@ -413,7 +413,7 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
                   />
                 </div>
                 <div className="space-y-3">
-                  <Label htmlFor="startDate" className="font-light">
+                  <Label htmlFor="startDate" className="font-normal">
                     Date de début <span className="text-muted-foreground text-sm">(optionnel)</span>
                   </Label>
                   <Input
@@ -424,7 +424,7 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
                   />
                 </div>
                 <div className="space-y-3">
-                  <Label htmlFor="deadline" className="font-light">
+                  <Label htmlFor="deadline" className="font-normal">
                     Date de fin / Deadline <span className="text-muted-foreground text-sm">(optionnel)</span>
                   </Label>
                   <Input
@@ -443,15 +443,15 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
             <div className="space-y-6">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <h2 className="text-3xl font-light tracking-tight">Décomposez les étapes</h2>
-                  <p className="text-muted-foreground font-light">
+                  <h2 className="text-3xl font-semibold tracking-tight">Décomposez les étapes</h2>
+                  <p className="text-muted-foreground font-normal">
                     Laissez Claude analyser votre projet et générer les étapes, ou ajoutez-les manuellement.
                   </p>
                 </div>
                 <Button
                   onClick={handleGenerateSteps}
                   disabled={isGenerating}
-                  className="w-full font-light"
+                  className="w-full font-normal"
                   variant="default"
                 >
                   {isGenerating ? (
@@ -474,13 +474,13 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
                   {formData.steps.map((step, index) => (
                     <div
                       key={step.id}
-                      className="p-4 rounded-lg border border-border/50 bg-background/50 space-y-3"
+                      className="p-4 rounded-lg border border-border bg-background/50 space-y-3"
                     >
                       {editingStepId === step.id ? (
                         // Mode édition
                         <div className="space-y-3">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-light text-muted-foreground">
+                            <span className="text-xs font-medium text-muted-foreground">
                               Étape {index + 1} - Édition
                             </span>
                             <div className="flex gap-1">
@@ -506,7 +506,7 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
                             placeholder="Titre de l'étape"
                             value={editingStepData.title}
                             onChange={(e) => setEditingStepData({ ...editingStepData, title: e.target.value })}
-                            className="font-light"
+                            className="font-medium"
                           />
                           <Textarea
                             placeholder="Description (optionnel)"
@@ -526,18 +526,18 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 space-y-1">
                             <div className="flex items-center gap-2">
-                              <span className="text-xs font-light text-muted-foreground">
+                              <span className="text-xs font-medium text-muted-foreground">
                                 Étape {index + 1}
                               </span>
                               {step.estimatedDuration && (
-                                <span className="text-xs font-light text-muted-foreground">
+                                <span className="text-xs font-medium text-muted-foreground">
                                   • {step.estimatedDuration}
                                 </span>
                               )}
                             </div>
-                            <h4 className="font-light">{step.title}</h4>
+                            <h4 className="font-normal">{step.title}</h4>
                             {step.description && (
-                              <p className="text-sm text-muted-foreground font-light">{step.description}</p>
+                              <p className="text-sm text-muted-foreground font-normal">{step.description}</p>
                             )}
                           </div>
                           <div className="flex gap-1">
@@ -568,7 +568,7 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
               {/* Formulaire d'ajout d'étape */}
               <div className="space-y-4 p-4 rounded-lg border border-dashed border-border">
                 <div className="space-y-3">
-                  <Label htmlFor="step-title" className="font-light text-sm">
+                  <Label htmlFor="step-title" className="font-medium text-sm">
                     Titre de l'étape
                   </Label>
                   <Input
@@ -579,7 +579,7 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
                   />
                 </div>
                 <div className="space-y-3">
-                  <Label htmlFor="step-description" className="font-light text-sm">
+                  <Label htmlFor="step-description" className="font-medium text-sm">
                     Description (optionnel)
                   </Label>
                   <Textarea
@@ -591,7 +591,7 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
                   />
                 </div>
                 <div className="space-y-3">
-                  <Label htmlFor="step-duration" className="font-light text-sm">
+                  <Label htmlFor="step-duration" className="font-medium text-sm">
                     Durée estimée (optionnel)
                   </Label>
                   <Input
@@ -622,19 +622,19 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
           variant="ghost"
           onClick={handlePrevious}
           disabled={currentStep === 1}
-          className="font-light"
+          className="font-medium"
         >
           <ChevronLeft className="h-4 w-4 mr-2" />
           Précédent
         </Button>
 
         {currentStep < totalSteps ? (
-          <Button onClick={handleNext} disabled={!canProceed()} className="font-light">
+          <Button onClick={handleNext} disabled={!canProceed()} className="font-normal">
             Suivant
             <ChevronRight className="h-4 w-4 ml-2" />
           </Button>
         ) : (
-          <Button onClick={handleSubmit} disabled={!canProceed() || isUploadingImage} className="font-light">
+          <Button onClick={handleSubmit} disabled={!canProceed() || isUploadingImage} className="font-normal">
             {isUploadingImage ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />

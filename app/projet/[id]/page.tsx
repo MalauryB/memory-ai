@@ -95,7 +95,7 @@ export default function ProjectDetailPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
-          <h2 className="text-2xl font-light">Projet introuvable</h2>
+          <h2 className="text-2xl font-medium">Projet introuvable</h2>
           <Button onClick={() => router.push("/")} variant="outline">
             Retour à l'accueil
           </Button>
@@ -110,9 +110,9 @@ export default function ProjectDetailPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="border-b border-border/50 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
+      <header className="border-b border-border backdrop-blur-sm sticky top-0 z-50 bg-background/80">
         <div className="container mx-auto px-6 py-6 flex items-center justify-between">
-          <Button variant="ghost" className="font-light" onClick={() => router.back()}>
+          <Button variant="ghost" className="font-normal" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Retour
           </Button>
@@ -125,9 +125,9 @@ export default function ProjectDetailPage() {
           {/* En-tête du projet */}
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-2 flex-1">
-              <h1 className="text-4xl font-light tracking-tight">{project.title}</h1>
+              <h1 className="text-4xl font-semibold tracking-tight">{project.title}</h1>
               {project.category && (
-                <span className="inline-block text-sm px-3 py-1 rounded-full bg-accent/10 text-accent font-light">
+                <span className="inline-block text-sm px-3 py-1 rounded-full bg-accent/10 text-accent font-normal">
                   {project.category}
                 </span>
               )}
@@ -144,7 +144,7 @@ export default function ProjectDetailPage() {
             <div className="lg:col-span-1 space-y-6">
               {/* Image du projet */}
               {project.image_url && (
-                <Card className="overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm">
+                <Card className="overflow-hidden border-border bg-card/50 backdrop-blur-sm">
                   <div className="aspect-video w-full">
                     <img
                       src={project.image_url}
@@ -156,37 +156,37 @@ export default function ProjectDetailPage() {
               )}
 
               {/* Progression globale */}
-              <Card className="p-6 border-border/50 bg-card/50 backdrop-blur-sm">
+              <Card className="p-6 border-border bg-card/50 backdrop-blur-sm">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-light text-muted-foreground uppercase tracking-wider">Progression</h3>
-                    <span className="text-3xl font-light">
+                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Progression</h3>
+                    <span className="text-3xl font-semibold">
                       {calculatedProgress}
                       <span className="text-lg text-muted-foreground">%</span>
                     </span>
                   </div>
                   <Progress value={calculatedProgress} className="h-2" />
-                  <div className="text-sm text-muted-foreground font-light">
+                  <div className="text-sm text-muted-foreground font-normal">
                     {completedSteps} / {totalSteps} étapes complétées
                   </div>
                 </div>
               </Card>
 
               {/* Dates */}
-              <Card className="p-6 border-border/50 bg-card/50 backdrop-blur-sm space-y-4">
-                <h3 className="text-sm font-light text-muted-foreground uppercase tracking-wider">Dates</h3>
+              <Card className="p-6 border-border bg-card/50 backdrop-blur-sm space-y-4">
+                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Dates</h3>
 
                 {project.start_date && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground font-light">Début</span>
-                    <span className="text-sm font-light">{formatDeadline(project.start_date)}</span>
+                    <span className="text-sm text-muted-foreground font-normal">Début</span>
+                    <span className="text-sm font-medium">{formatDeadline(project.start_date)}</span>
                   </div>
                 )}
 
                 {project.deadline && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground font-light">Échéance</span>
-                    <span className="text-sm font-light flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground font-normal">Échéance</span>
+                    <span className="text-sm font-medium flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
                       {formatDeadline(project.deadline)}
                     </span>
@@ -194,7 +194,7 @@ export default function ProjectDetailPage() {
                 )}
 
                 {!project.start_date && !project.deadline && (
-                  <p className="text-sm text-muted-foreground font-light italic">Aucune date définie</p>
+                  <p className="text-sm text-muted-foreground font-normal italic">Aucune date définie</p>
                 )}
               </Card>
 
@@ -207,9 +207,9 @@ export default function ProjectDetailPage() {
 
               {/* Description (discrète) */}
               {project.description && (
-                <Card className="p-6 border-border/50 bg-card/50 backdrop-blur-sm space-y-3">
-                  <h3 className="text-sm font-light text-muted-foreground uppercase tracking-wider">Description</h3>
-                  <p className="text-sm text-muted-foreground font-light leading-relaxed">
+                <Card className="p-6 border-border bg-card/50 backdrop-blur-sm space-y-3">
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Description</h3>
+                  <p className="text-sm text-muted-foreground font-normal leading-relaxed">
                     {project.description}
                   </p>
                 </Card>
@@ -229,8 +229,8 @@ export default function ProjectDetailPage() {
               {/* Liste des étapes */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-light tracking-tight">Étapes du projet</h2>
-                  <span className="text-sm text-muted-foreground font-light">
+                  <h2 className="text-2xl font-medium tracking-tight">Étapes du projet</h2>
+                  <span className="text-sm text-muted-foreground font-normal">
                     {totalSteps} étape{totalSteps > 1 ? "s" : ""}
                   </span>
                 </div>
@@ -252,8 +252,8 @@ export default function ProjectDetailPage() {
                 </div>
 
                 {project.project_steps.length === 0 && (
-                  <Card className="p-8 border-border/50 bg-card/50 backdrop-blur-sm text-center">
-                    <p className="text-muted-foreground font-light">
+                  <Card className="p-8 border-border bg-card/50 backdrop-blur-sm text-center">
+                    <p className="text-muted-foreground font-normal">
                       Aucune étape définie pour ce projet
                     </p>
                     <Button
@@ -268,7 +268,7 @@ export default function ProjectDetailPage() {
                 )}
 
                 {project.project_steps.length > 0 && (
-                  <p className="text-sm text-muted-foreground font-light text-center pt-4">
+                  <p className="text-sm text-muted-foreground font-normal text-center pt-4">
                     💡 Cliquez sur une étape pour changer son statut, ou déployez-la pour voir ses sous-étapes
                   </p>
                 )}
