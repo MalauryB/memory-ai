@@ -4,7 +4,7 @@ import { createClientFromRequest } from "@/lib/supabase-server"
 // DELETE /api/trackers/[id] - Supprimer un tracker
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const supabase = createClientFromRequest(request)
+    const supabase = await createClientFromRequest(request)
 
     // Vérifier l'authentification
     const {
@@ -65,7 +65,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 // PATCH /api/trackers/[id] - Modifier un tracker
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const supabase = createClientFromRequest(request)
+    const supabase = await createClientFromRequest(request)
 
     // Vérifier l'authentification
     const {

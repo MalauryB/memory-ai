@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { Clock, Loader2, Sparkles, FolderOpen, MapPin, Coffee, Lightbulb, X } from "lucide-react"
+import { Clock, Loader2, Sparkles, FolderOpen, MapPin, Coffee, Lightbulb, X, ChevronLeft, ChevronRight, Calendar } from "lucide-react"
 import { PlanningConfigurator } from "@/components/planning-configurator"
 
 interface DailyTask {
@@ -38,10 +38,11 @@ export function DailyPlanner() {
   const [availableHours, setAvailableHours] = useState(8)
   const [hasPlanning, setHasPlanning] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
+  const [selectedDate, setSelectedDate] = useState(new Date())
 
   useEffect(() => {
     fetchDailyPlan()
-  }, [])
+  }, [selectedDate])
 
   // Mettre à jour l'heure actuelle toutes les minutes
   useEffect(() => {
@@ -55,7 +56,8 @@ export function DailyPlanner() {
   async function fetchDailyPlan() {
     setLoading(true)
     try {
-      const response = await fetch("/api/daily-plan")
+      const dateParam = selectedDate.toISOString().split('T')[0]
+      const response = await fetch(`/api/daily-plan?date=${dateParam}`)
       if (response.ok) {
         const data = await response.json()
         setTasks(data.tasks || [])
@@ -67,6 +69,29 @@ export function DailyPlanner() {
     } finally {
       setLoading(false)
     }
+  }
+
+  function changeDate(days: number) {
+    const newDate = new Date(selectedDate)
+    newDate.setDate(newDate.getDate() + days)
+    setSelectedDate(newDate)
+  }
+
+  function isToday(date: Date): boolean {
+    const today = new Date()
+    return date.toDateString() === today.toDateString()
+  }
+
+  function isTomorrow(date: Date): boolean {
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    return date.toDateString() === tomorrow.toDateString()
+  }
+
+  function getDateLabel(): string {
+    if (isToday(selectedDate)) return "Aujourd'hui"
+    if (isTomorrow(selectedDate)) return "Demain"
+    return selectedDate.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })
   }
 
   async function toggleTaskCompletion(taskId: string) {
@@ -118,6 +143,7 @@ export function DailyPlanner() {
     setTasks([])
 
     try {
+      const dateParam = selectedDate.toISOString().split('T')[0]
       const response = await fetch("/api/daily-plan", {
         method: "POST",
         headers: {
@@ -125,6 +151,7 @@ export function DailyPlanner() {
         },
         body: JSON.stringify({
           ...config,
+          date: dateParam,
           currentTime: new Date().toTimeString().split(' ')[0].substring(0, 5),
           forceRegenerate: true // Forcer la régénération
         })
@@ -164,11 +191,47 @@ export function DailyPlanner() {
     <div className="space-y-6 max-w-4xl mx-auto">
       <div className="space-y-2">
         <div className="flex items-start justify-between gap-4">
-          <div>
+          <div className="flex-1">
             <h2 className="text-2xl font-semibold tracking-tight text-balance">Planning du jour</h2>
-            <p className="text-sm text-muted-foreground font-normal leading-relaxed mt-1">
-              Aujourd'hui, {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
-            </p>
+
+            {/* Sélecteur de date */}
+            <div className="flex items-center gap-2 mt-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => changeDate(-1)}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+
+              <div className="flex items-center gap-2 px-3 py-1 rounded-md bg-accent/10 border border-accent/20">
+                <Calendar className="h-3.5 w-3.5 text-accent" />
+                <span className="text-sm font-medium">
+                  {getDateLabel()}
+                </span>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => changeDate(1)}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+
+              {!isToday(selectedDate) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedDate(new Date())}
+                  className="h-8 text-xs"
+                >
+                  Aujourd'hui
+                </Button>
+              )}
+            </div>
           </div>
           <div className="flex gap-2 flex-shrink-0">
             <PlanningConfigurator onGenerate={generateWithConfig} loading={generating} />
@@ -182,7 +245,21 @@ export function DailyPlanner() {
         )}
       </div>
 
-      {tasks.length === 0 ? (
+      {generating ? (
+        <Card className="p-8 border-border bg-card/50 backdrop-blur-sm">
+          <div className="text-center space-y-4">
+            <div className="flex justify-center">
+              <Loader2 className="h-12 w-12 animate-spin text-accent" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-lg font-medium">Génération de votre planning...</h3>
+              <p className="text-xs text-muted-foreground font-normal max-w-md mx-auto">
+                Analyse de vos projets, trackers et préférences en cours
+              </p>
+            </div>
+          </div>
+        </Card>
+      ) : tasks.length === 0 ? (
         <Card className="p-8 border-border bg-card/50 backdrop-blur-sm">
           <div className="text-center space-y-4">
             <div className="flex justify-center">

@@ -3,7 +3,7 @@ import { createClientFromRequest } from "@/lib/supabase-server"
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClientFromRequest(request)
+    const supabase = await createClientFromRequest(request)
 
     // Vérifier l'authentification
     const {
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClientFromRequest(request)
+    const supabase = await createClientFromRequest(request)
     const body = await request.json()
 
     // Vérifier l'authentification

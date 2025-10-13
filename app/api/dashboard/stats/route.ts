@@ -4,7 +4,7 @@ import { createClientFromRequest } from "@/lib/supabase-server"
 // GET /api/dashboard/stats - Récupérer les statistiques du dashboard
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClientFromRequest(request)
+    const supabase = await createClientFromRequest(request)
 
     const {
       data: { user },

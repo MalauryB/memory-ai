@@ -43,7 +43,7 @@ const mockSubsteps = [
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClientFromRequest(request)
+    const supabase = await createClientFromRequest(request)
 
     // Récupérer l'utilisateur
     const {

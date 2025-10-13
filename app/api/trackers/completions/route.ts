@@ -4,7 +4,7 @@ import { createClientFromRequest } from "@/lib/supabase-server"
 // GET /api/trackers/completions - Récupérer les complétions pour une date
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClientFromRequest(request)
+    const supabase = await createClientFromRequest(request)
 
     // Vérifier l'authentification
     const {

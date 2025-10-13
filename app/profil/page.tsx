@@ -584,8 +584,12 @@ export default function ProfilePage() {
           <Card className="p-6 border-border/50 bg-card/50 backdrop-blur-sm space-y-6">
             <div className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-muted-foreground" />
-              <h3 className="text-xl font-light">Planning de travail</h3>
+              <h3 className="text-xl font-light">Travail salarié (heures indisponibles)</h3>
             </div>
+
+            <p className="text-sm text-muted-foreground font-light">
+              Indiquez vos horaires de travail salarié. Aucune tâche ne sera planifiée pendant ces heures.
+            </p>
 
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -599,6 +603,9 @@ export default function ProfilePage() {
                     value={profile.work_hours_start}
                     onChange={(e) => setProfile({ ...profile, work_hours_start: e.target.value })}
                   />
+                  <p className="text-xs text-muted-foreground font-light">
+                    Début du travail salarié
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -611,11 +618,14 @@ export default function ProfilePage() {
                     value={profile.work_hours_end}
                     onChange={(e) => setProfile({ ...profile, work_hours_end: e.target.value })}
                   />
+                  <p className="text-xs text-muted-foreground font-light">
+                    Fin du travail salarié
+                  </p>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="daily_work_hours" className="font-light">
-                    Heures par jour
+                    Heures disponibles par jour
                   </Label>
                   <Input
                     id="daily_work_hours"
@@ -627,6 +637,9 @@ export default function ProfilePage() {
                       setProfile({ ...profile, daily_work_hours: parseInt(e.target.value) || 8 })
                     }
                   />
+                  <p className="text-xs text-muted-foreground font-light">
+                    Temps dispo pour vos projets
+                  </p>
                 </div>
               </div>
 

@@ -4,7 +4,7 @@ import { createClientFromRequest } from "@/lib/supabase-server"
 // POST /api/trackers/create - Créer un tracker manuellement
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClientFromRequest(request)
+    const supabase = await createClientFromRequest(request)
 
     // Vérifier l'authentification
     const {

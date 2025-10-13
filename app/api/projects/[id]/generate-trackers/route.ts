@@ -5,7 +5,7 @@ import { getUserContext, formatUserContextForAI, getUserRecommendations } from "
 // POST /api/projects/[id]/generate-trackers - Générer des trackers à partir d'un projet
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const supabase = createClientFromRequest(request)
+    const supabase = await createClientFromRequest(request)
 
     // Vérifier l'authentification
     const {

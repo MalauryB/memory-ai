@@ -8,6 +8,7 @@ interface PlanningConfig {
   selectedActivities: string[] // IDs des activités custom à inclure
   currentTime: string // Heure actuelle pour éviter le passé
   forceRegenerate?: boolean // Forcer la régénération même si un plan existe
+  date?: string // Date du planning (format YYYY-MM-DD)
 }
 
 interface EnrichedSubstep {
@@ -54,7 +55,7 @@ interface DailyPlanTask {
 // POST - Générer et sauvegarder un planning avec configuration personnalisée
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClientFromRequest(request)
+    const supabase = await createClientFromRequest(request)
 
     const {
       data: { user },
@@ -72,11 +73,14 @@ export async function POST(request: NextRequest) {
       style = 'mixed',
       selectedActivities = [],
       currentTime,
-      forceRegenerate = false
+      forceRegenerate = false,
+      date
     } = body
 
-    const today = new Date().toISOString().split("T")[0]
+    const today = date || new Date().toISOString().split("T")[0]
     const now = currentTime || new Date().toTimeString().split(' ')[0].substring(0, 5)
+
+    console.log(`📅 Génération planning pour: ${today}`)
 
     // Vérifier si un plan existe déjà pour aujourd'hui
     if (!forceRegenerate) {
@@ -127,29 +131,72 @@ export async function POST(request: NextRequest) {
     const workHoursEnd = userProfile?.work_hours_end || "18:00:00"
     const dailyWorkHours = userProfile?.daily_work_hours || 8
     const breakFrequency = userProfile?.break_frequency || 60
-    const userCity = userProfile?.location_city || "Paris"
+    const userCity = userProfile?.location || "Paris"
+    const wakeUpTime = userProfile?.wake_up_time || "07:00:00"
+    const sleepTime = userProfile?.sleep_time || "23:00:00"
+    const morningRoutine = userProfile?.morning_routine
+    const morningRoutineDuration = userProfile?.morning_routine_duration || 0
+    const nightRoutine = userProfile?.night_routine
+    const nightRoutineDuration = userProfile?.night_routine_duration || 0
+    const preferredWorkDays = userProfile?.preferred_work_days || [1, 2, 3, 4, 5]
 
     // 2. Récupérer les projets actifs
-    const { data: projects } = await supabase
+    const { data: projects, error: projectsError } = await supabase
       .from("projects")
-      .select("id, title, category, deadline")
+      .select("id, title, category, deadline, status")
       .eq("user_id", user?.id || null)
-      .in("status", ["active"])
+      .eq("status", "active")
       .order("deadline", { ascending: true, nullsFirst: false })
 
-    if (!projects || projects.length === 0) {
-      return NextResponse.json({ tasks: [], availableHours: dailyWorkHours })
+    if (projectsError) {
+      console.error("❌ Erreur requête projets:", projectsError)
+    }
+
+    console.log(`📊 Projets trouvés: ${projects?.length || 0}`)
+    if (projects && projects.length > 0) {
+      console.log(`   Projets:`, projects.map(p => `${p.title} (${p.status})`).join(', '))
+    } else {
+      console.log(`   User ID: ${user?.id || 'null'}`)
+
+      // Vérifier tous les projets de l'utilisateur
+      const { data: allProjects } = await supabase
+        .from("projects")
+        .select("id, title, status")
+        .eq("user_id", user?.id || null)
+
+      console.log(`   Tous les projets de l'utilisateur: ${allProjects?.length || 0}`)
+      if (allProjects && allProjects.length > 0) {
+        console.log(`   Statuts:`, allProjects.map(p => `${p.title}: ${p.status}`).join(', '))
+      }
+    }
+
+    // Permettre la génération même sans projets si on a des activités personnalisées
+    if ((!projects || projects.length === 0) && selectedActivities.length === 0) {
+      console.log("⚠️ Aucun projet ni activité personnalisée sélectionnée")
+      return NextResponse.json({
+        tasks: [],
+        availableHours: dailyWorkHours,
+        message: "Aucun projet actif ou activité sélectionnée"
+      })
     }
 
     // 3. Récupérer les substeps ET les trackers
-    const projectIds = projects.map((p) => p.id)
-    const { data: substeps } = await supabase
-      .from("project_substeps")
-      .select("*")
-      .in("project_id", projectIds)
-      .in("status", ["pending", "in_progress"])
-      .order("scheduled_date", { ascending: true, nullsFirst: false })
-      .order("order_index", { ascending: true })
+    const projectIds = projects?.map((p) => p.id) || []
+    let substeps: any[] = []
+
+    if (projectIds.length > 0) {
+      const { data: fetchedSubsteps } = await supabase
+        .from("project_substeps")
+        .select("*")
+        .in("project_id", projectIds)
+        .in("status", ["pending", "in_progress"])
+        .order("scheduled_date", { ascending: true, nullsFirst: false })
+        .order("order_index", { ascending: true })
+
+      substeps = fetchedSubsteps || []
+    }
+
+    console.log(`📝 Substeps trouvées: ${substeps.length}`)
 
     // 4. Récupérer les activités personnalisées sélectionnées
     let customActivities: any[] = []
@@ -161,9 +208,19 @@ export async function POST(request: NextRequest) {
       customActivities = activities || []
     }
 
+    console.log(`🎨 Activités personnalisées sélectionnées: ${customActivities.length}`)
+
+    // 4bis. Récupérer les créneaux horaires bloqués pour aujourd'hui
+    const todayDayOfWeek = new Date(today).getDay()
+    const { data: blockedSlots } = await supabase
+      .from("blocked_time_slots")
+      .select("*")
+      .eq("user_id", user?.id || null)
+      .contains("days_of_week", [todayDayOfWeek])
+
     // 5. Enrichir les substeps
-    const enrichedSubsteps: EnrichedSubstep[] = (substeps || []).map((substep: any) => {
-      const project = projects.find((p) => p.id === substep.project_id)
+    const enrichedSubsteps: EnrichedSubstep[] = substeps.map((substep: any) => {
+      const project = projects?.find((p) => p.id === substep.project_id)
       return {
         ...substep,
         project_title: project?.title || "Projet",
@@ -172,6 +229,8 @@ export async function POST(request: NextRequest) {
         project_priority: calculateProjectPriority(project, today),
       }
     })
+
+    console.log(`✅ Planning - ${enrichedSubsteps.length} substeps + ${customActivities.length} activités personnalisées`)
 
     // 6. Générer le planning intelligent
     const dailyPlan = await generateIntelligentDailyPlan({
@@ -187,8 +246,19 @@ export async function POST(request: NextRequest) {
       today,
       userCity,
       supabase,
-      anthropicApiKey: process.env.ANTHROPIC_API_KEY
+      anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+      blockedSlots: blockedSlots || [],
+      wakeUpTime,
+      sleepTime,
+      morningRoutine,
+      morningRoutineDuration,
+      nightRoutine,
+      nightRoutineDuration,
+      preferredWorkDays,
+      todayDayOfWeek
     })
+
+    console.log(`🎯 Planning généré: ${dailyPlan.length} tâches au total`)
 
     // 7. Sauvegarder le plan en base de données
     if (user && dailyPlan.length > 0) {
@@ -261,7 +331,7 @@ export async function POST(request: NextRequest) {
 // GET - Récupérer le planning du jour sauvegardé
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClientFromRequest(request)
+    const supabase = await createClientFromRequest(request)
 
     const {
       data: { user },
@@ -273,7 +343,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
     }
 
-    const today = new Date().toISOString().split("T")[0]
+    // Récupérer le paramètre de date depuis l'URL
+    const { searchParams } = new URL(request.url)
+    const dateParam = searchParams.get('date')
+    const today = dateParam || new Date().toISOString().split("T")[0]
+
+    console.log(`📅 Récupération planning pour: ${today}`)
 
     // Récupérer le plan du jour avec ses items et les enrichir avec les infos des substeps
     const { data: dailyPlan } = await supabase
@@ -367,6 +442,15 @@ async function generateIntelligentDailyPlan(config: {
   userCity: string
   supabase: any
   anthropicApiKey?: string
+  blockedSlots?: any[]
+  wakeUpTime?: string
+  sleepTime?: string
+  morningRoutine?: string
+  morningRoutineDuration?: number
+  nightRoutine?: string
+  nightRoutineDuration?: number
+  preferredWorkDays?: number[]
+  todayDayOfWeek?: number
 }): Promise<DailyPlanTask[]> {
   const {
     substeps,
@@ -381,7 +465,16 @@ async function generateIntelligentDailyPlan(config: {
     today,
     userCity,
     supabase,
-    anthropicApiKey
+    anthropicApiKey,
+    blockedSlots = [],
+    wakeUpTime,
+    sleepTime,
+    morningRoutine,
+    morningRoutineDuration = 0,
+    nightRoutine,
+    nightRoutineDuration = 0,
+    preferredWorkDays = [1, 2, 3, 4, 5],
+    todayDayOfWeek = new Date().getDay()
   } = config
 
   // 1. Calculer les paramètres d'intensité
@@ -420,13 +513,69 @@ async function generateIntelligentDailyPlan(config: {
 
   scoredSubsteps.sort((a, b) => b.priority_score - a.priority_score)
 
-  // 3. Déterminer l'heure de début (maintenant ou work_hours_start)
+  // 2bis. Vérifier si un créneau horaire est bloqué
+  function isTimeSlotBlocked(hour: number, minute: number, durationMinutes: number): boolean {
+    const taskStart = hour * 60 + minute
+    const taskEnd = taskStart + durationMinutes
+
+    for (const slot of blockedSlots) {
+      const [slotStartHour, slotStartMin] = slot.start_time.split(':').map(Number)
+      const [slotEndHour, slotEndMin] = slot.end_time.split(':').map(Number)
+      const slotStart = slotStartHour * 60 + slotStartMin
+      const slotEnd = slotEndHour * 60 + slotEndMin
+
+      // Vérifier si la tâche chevauche le créneau bloqué
+      if ((taskStart >= slotStart && taskStart < slotEnd) ||
+          (taskEnd > slotStart && taskEnd <= slotEnd) ||
+          (taskStart <= slotStart && taskEnd >= slotEnd)) {
+        return true
+      }
+    }
+    return false
+  }
+
+  // 3. Déterminer l'heure de début et de fin disponibles
   const [startHour, startMinute] = now.split(':').map(Number)
   const [workStartHour] = workHoursStart.split(':').map(Number)
   const [workEndHour] = workHoursEnd.split(':').map(Number)
+  const [wakeHour, wakeMinute] = (wakeUpTime || "07:00:00").split(':').map(Number)
+  const [sleepHour] = (sleepTime || "23:00:00").split(':').map(Number)
 
-  let currentHour = Math.max(startHour, workStartHour)
-  let currentMinute = startHour >= workStartHour ? startMinute : 0
+  // Calculer l'heure de début en tenant compte de la routine matinale
+  let morningEndHour = wakeHour
+  let morningEndMinute = wakeMinute + morningRoutineDuration
+  while (morningEndMinute >= 60) {
+    morningEndHour += 1
+    morningEndMinute -= 60
+  }
+
+  // L'heure de début est la plus tardive entre :
+  // - Fin de routine matinale
+  // - Heure actuelle (si on génère dans la journée)
+  let currentHour = Math.max(startHour, morningEndHour)
+  let currentMinute = startHour >= morningEndHour ? startMinute : morningEndMinute
+
+  // Si on est actuellement dans les heures de travail salarié, commencer après
+  if (currentHour < workEndHour && currentHour >= workStartHour) {
+    currentHour = workEndHour
+    currentMinute = 0
+  }
+
+  // L'heure de fin est la plus tôt entre :
+  // - Heure de coucher
+  // - Début de la routine du soir
+  let endHour = sleepHour
+  let endMinute = 0
+
+  // Soustraire la durée de la routine du soir
+  endMinute -= nightRoutineDuration
+  while (endMinute < 0) {
+    endHour -= 1
+    endMinute += 60
+  }
+
+  console.log(`⏰ Plage horaire disponible: ${currentHour}:${String(currentMinute).padStart(2, '0')} - ${endHour}:${String(endMinute).padStart(2, '0')}`)
+  console.log(`🚫 Heures de travail salarié: ${workStartHour}:00 - ${workEndHour}:00`)
 
   // 4. Planifier selon le style
   const dailyPlan: DailyPlanTask[] = []
@@ -434,13 +583,18 @@ async function generateIntelligentDailyPlan(config: {
   let lastBreakTime = 0
   let breakCounter = 0
 
+  // Fonction pour vérifier si on est dans les heures de travail salarié
+  function isInWorkHours(hour: number): boolean {
+    return hour >= workStartHour && hour < workEndHour
+  }
+
   if (style === 'thematic_blocks') {
     // Regrouper par catégorie de projet
     const byCategory = groupBy(scoredSubsteps, 'project_category')
 
     for (const [category, tasks] of Object.entries(byCategory)) {
       for (const substep of tasks as EnrichedSubstep[]) {
-        if (currentHour >= workEndHour) break
+        if (currentHour >= endHour) break
 
         const result = addTaskToPlan({
           task: substep,
@@ -452,8 +606,11 @@ async function generateIntelligentDailyPlan(config: {
           availableMinutes,
           breakFrequency,
           intensityConfig,
-          workEndHour,
-          breakCounter
+          endHour,
+          breakCounter,
+          isTimeSlotBlocked,
+          workStartHour,
+          workEndHour
         })
 
         if (!result) break
@@ -468,7 +625,7 @@ async function generateIntelligentDailyPlan(config: {
   } else {
     // Style mixte - alterner les catégories
     for (const substep of scoredSubsteps) {
-      if (currentHour >= workEndHour) break
+      if (currentHour >= endHour) break
 
       const result = addTaskToPlan({
         task: substep,
@@ -480,8 +637,11 @@ async function generateIntelligentDailyPlan(config: {
         availableMinutes,
         breakFrequency,
         intensityConfig,
-        workEndHour,
-        breakCounter
+        endHour,
+        breakCounter,
+        isTimeSlotBlocked,
+        workStartHour,
+        workEndHour
       })
 
       if (!result) break
@@ -496,14 +656,14 @@ async function generateIntelligentDailyPlan(config: {
 
   // 5. Insérer les activités personnalisées
   for (const activity of customActivities) {
-    if (currentHour >= workEndHour) break
+    if (currentHour >= endHour) break
 
     const durationInMinutes = parseDuration(activity.estimated_duration)
 
     if (currentMinutes + durationInMinutes > availableMinutes) break
 
     const taskEndHour = currentHour + Math.floor((currentMinute + durationInMinutes) / 60)
-    if (taskEndHour >= workEndHour) break
+    if (taskEndHour >= endHour) break
 
     const scheduledTime = `${String(currentHour).padStart(2, "0")}:${String(currentMinute).padStart(2, "0")}`
 
@@ -585,8 +745,11 @@ function addTaskToPlan(params: {
   availableMinutes: number
   breakFrequency: number
   intensityConfig: any
-  workEndHour: number
+  endHour: number
   breakCounter: number
+  isTimeSlotBlocked: (hour: number, minute: number, duration: number) => boolean
+  workStartHour: number
+  workEndHour: number
 }): { currentHour: number, currentMinute: number, currentMinutes: number, lastBreakTime: number, breakCounter: number } | null {
   const {
     task,
@@ -598,8 +761,11 @@ function addTaskToPlan(params: {
     availableMinutes,
     breakFrequency,
     intensityConfig,
-    workEndHour,
-    breakCounter
+    endHour,
+    breakCounter,
+    isTimeSlotBlocked,
+    workStartHour,
+    workEndHour
   } = params
 
   const durationInMinutes = parseDuration(task.estimated_duration)
@@ -607,7 +773,51 @@ function addTaskToPlan(params: {
   if (currentMinutes + durationInMinutes > availableMinutes) return null
 
   const taskEndHour = currentHour + Math.floor((currentMinute + durationInMinutes) / 60)
-  if (taskEndHour >= workEndHour) return null
+  const taskEndMinute = (currentMinute + durationInMinutes) % 60
+
+  if (taskEndHour > endHour || (taskEndHour === endHour && taskEndMinute > 0)) return null
+
+  // Vérifier si le créneau chevauche les heures de travail salarié
+  const isInWorkHours = (currentHour >= workStartHour && currentHour < workEndHour) ||
+                        (taskEndHour > workStartHour && taskEndHour <= workEndHour)
+
+  if (isInWorkHours) {
+    // Sauter après les heures de travail
+    let nextHour = workEndHour
+    let nextMinute = 0
+
+    // Si on dépasse la fin de la journée, abandonner
+    if (nextHour >= endHour) return null
+
+    // Ré-essayer après les heures de travail
+    return addTaskToPlan({
+      ...params,
+      currentHour: nextHour,
+      currentMinute: nextMinute
+    })
+  }
+
+  // Vérifier si le créneau est bloqué (créneaux personnalisés)
+  if (isTimeSlotBlocked(currentHour, currentMinute, durationInMinutes)) {
+    // Essayer de trouver le prochain créneau disponible
+    let nextHour = currentHour
+    let nextMinute = currentMinute + 15 // Avancer par intervalles de 15 minutes
+
+    while (nextMinute >= 60) {
+      nextHour += 1
+      nextMinute -= 60
+    }
+
+    // Si on dépasse la fin de la journée, abandonner
+    if (nextHour >= endHour) return null
+
+    // Ré-essayer avec le nouveau créneau
+    return addTaskToPlan({
+      ...params,
+      currentHour: nextHour,
+      currentMinute: nextMinute
+    })
+  }
 
   const scheduledTime = `${String(currentHour).padStart(2, "0")}:${String(currentMinute).padStart(2, "0")}`
 
