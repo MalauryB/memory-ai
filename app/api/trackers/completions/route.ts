@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     // Récupérer toutes les complétions pour cette date
     // On doit joindre avec project_substeps pour vérifier que le substep appartient à l'utilisateur
     const { data: completions, error } = await supabase
-      .from("tracker_completions")
+      .from("substep_completions")
       .select(`
         id,
         substep_id,

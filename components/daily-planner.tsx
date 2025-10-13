@@ -57,10 +57,7 @@ export function DailyPlanner() {
     setLoading(true)
     try {
       const dateParam = selectedDate.toISOString().split('T')[0]
-      // Cache avec revalidation : données fraîches mais performantes
-      const response = await fetch(`/api/daily-plan?date=${dateParam}`, {
-        next: { revalidate: 30 }
-      })
+      const response = await fetch(`/api/daily-plan?date=${dateParam}`)
       if (response.ok) {
         const data = await response.json()
         setTasks(data.tasks || [])

@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClientFromRequest } from "@/lib/supabase-server"
 import { getUserContext, formatUserContextForAI, getUserRecommendations } from "@/lib/user-context"
 
-// Cache intelligent : revalider toutes les 30 secondes
-export const revalidate = 30
-
 interface PlanningConfig {
   intensity: 'light' | 'moderate' | 'intense'
   style: 'mixed' | 'thematic_blocks'

@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
       (trackingSubsteps || []).map(async (substep: any) => {
         // Récupérer les complétions pour ce tracker
         const { data: completions } = await supabase
-          .from("tracker_completions")
+          .from("substep_completions")
           .select("completion_date")
           .eq("substep_id", substep.id)
           .order("completion_date", { ascending: false })

@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     // 2. Vérifier qu'il n'y a pas déjà une complétion pour cette date
     const { data: existingCompletion } = await supabase
-      .from("tracker_completions")
+      .from("substep_completions")
       .select("id")
       .eq("substep_id", tracker_id)
       .eq("completion_date", completion_date)
@@ -57,9 +57,10 @@ export async function POST(request: NextRequest) {
 
     // 3. Insérer la nouvelle complétion
     const { data: completion, error: insertError } = await supabase
-      .from("tracker_completions")
+      .from("substep_completions")
       .insert({
         substep_id: tracker_id,
+        user_id: user?.id || null,
         completion_date,
         completed_at: new Date().toISOString(),
         notes: notes || null

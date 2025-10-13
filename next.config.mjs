@@ -20,6 +20,13 @@ const nextConfig = {
     }
     return config
   },
+  // Activer le cache pour de meilleures performances
+  experimental: {
+    staleTimes: {
+      dynamic: 30,
+      static: 180,
+    },
+  },
 }
 
 export default nextConfig
