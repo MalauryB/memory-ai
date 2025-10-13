@@ -6,9 +6,9 @@ import { Card } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Loader2, Calendar as CalendarIcon, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react"
+import { Loader2, Calendar as CalendarIcon, ChevronLeft, ChevronRight, CalendarDays, CalendarClock } from "lucide-react"
 
-type CalendarMode = "month" | "week"
+type CalendarMode = "day" | "week" | "month"
 
 interface Project {
   id: string
@@ -51,7 +51,7 @@ export function CalendarView() {
   const [loading, setLoading] = useState(true)
   const [visibleProjects, setVisibleProjects] = useState<Set<string>>(new Set())
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [mode, setMode] = useState<CalendarMode>("month")
+  const [mode, setMode] = useState<CalendarMode>("week")
 
   useEffect(() => {
     fetchProjects()
@@ -265,6 +265,12 @@ export function CalendarView() {
     setCurrentDate(newDate)
   }
 
+  function changeDay(delta: number) {
+    const newDate = new Date(currentDate)
+    newDate.setDate(newDate.getDate() + delta)
+    setCurrentDate(newDate)
+  }
+
   // Générer les jours de la semaine courante
   function generateWeekDays() {
     const days: Date[] = []
@@ -288,7 +294,10 @@ export function CalendarView() {
   const weekDays = mode === "week" ? generateWeekDays() : []
   const monthName = currentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
   const weekRange = mode === "week"
-    ? `${weekDays[0].toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} - ${weekDays[6].toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}`
+    ? `${weekDays[0]?.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} - ${weekDays[6]?.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}`
+    : ""
+  const dayName = mode === "day"
+    ? currentDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
     : ""
   const today = new Date().toISOString().split('T')[0]
 
@@ -332,13 +341,13 @@ export function CalendarView() {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1">
             <Button
-              variant={mode === "month" ? "default" : "outline"}
+              variant={mode === "day" ? "default" : "outline"}
               size="sm"
-              onClick={() => setMode("month")}
+              onClick={() => setMode("day")}
               className="font-normal h-7 text-xs px-2"
             >
-              <CalendarIcon className="h-3 w-3 mr-1" />
-              Mois
+              <CalendarClock className="h-3 w-3 mr-1" />
+              Jour
             </Button>
             <Button
               variant={mode === "week" ? "default" : "outline"}
@@ -349,15 +358,28 @@ export function CalendarView() {
               <CalendarDays className="h-3 w-3 mr-1" />
               Semaine
             </Button>
+            <Button
+              variant={mode === "month" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setMode("month")}
+              className="font-normal h-7 text-xs px-2"
+            >
+              <CalendarIcon className="h-3 w-3 mr-1" />
+              Mois
+            </Button>
           </div>
           <h2 className="text-lg font-medium capitalize">
-            {mode === "month" ? monthName : weekRange}
+            {mode === "month" ? monthName : mode === "week" ? weekRange : dayName}
           </h2>
           <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => mode === "month" ? changeMonth(-1) : changeWeek(-1)}
+              onClick={() => {
+                if (mode === "month") changeMonth(-1)
+                else if (mode === "week") changeWeek(-1)
+                else changeDay(-1)
+              }}
               className="font-normal h-7 w-7 p-0"
             >
               <ChevronLeft className="h-3 w-3" />
@@ -365,7 +387,11 @@ export function CalendarView() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => mode === "month" ? changeMonth(1) : changeWeek(1)}
+              onClick={() => {
+                if (mode === "month") changeMonth(1)
+                else if (mode === "week") changeWeek(1)
+                else changeDay(1)
+              }}
               className="font-normal h-7 w-7 p-0"
             >
               <ChevronRight className="h-3 w-3" />
@@ -373,14 +399,16 @@ export function CalendarView() {
           </div>
         </div>
 
-        {/* Jours de la semaine */}
-        <div className="grid grid-cols-7 gap-1 mb-1">
-          {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(day => (
-            <div key={day} className="text-center text-[10px] font-medium text-muted-foreground py-1">
-              {day}
-            </div>
-          ))}
-        </div>
+        {/* Jours de la semaine (masqué en vue jour) */}
+        {mode !== "day" && (
+          <div className="grid grid-cols-7 gap-1 mb-1">
+            {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(day => (
+              <div key={day} className="text-center text-[10px] font-medium text-muted-foreground py-1">
+                {day}
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Grille du calendrier - Vue Mois */}
         {mode === "month" && (
@@ -445,6 +473,69 @@ export function CalendarView() {
                 </div>
               )
             })}
+          </div>
+        )}
+
+        {/* Vue Jour */}
+        {mode === "day" && (
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+            <div className="flex-1 space-y-2 overflow-y-auto">
+              {(() => {
+                const events = getEventsForDay(currentDate)
+                const isToday = currentDate.toISOString().split('T')[0] === today
+
+                if (events.length === 0) {
+                  return (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center text-muted-foreground">
+                        <p className="text-sm">Aucun événement pour cette journée</p>
+                      </div>
+                    </div>
+                  )
+                }
+
+                return events.map((event, idx) => (
+                  <div
+                    key={`${event.projectId}-${event.trackerId || idx}`}
+                    className="p-4 rounded-lg border border-border cursor-pointer hover:border-accent/50 transition-all"
+                    style={{
+                      backgroundColor: `${event.color}10`,
+                      borderLeftWidth: '4px',
+                      borderLeftColor: event.color
+                    }}
+                    onClick={() => router.push(`/projet/${event.projectId}`)}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div
+                        className="w-3 h-3 rounded-full mt-1 flex-shrink-0"
+                        style={{ backgroundColor: event.color }}
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-medium text-base" style={{ color: event.color }}>
+                            {event.type === 'start' && '▶ Début de projet'}
+                            {event.type === 'deadline' && '🏁 Échéance'}
+                            {event.type === 'duration' && '— Projet en cours'}
+                            {event.type === 'tracker' && '✓ Tracker'}
+                          </h3>
+                          <Badge variant="secondary" className="text-xs">
+                            {event.projectCategory}
+                          </Badge>
+                        </div>
+                        <p className="text-sm font-normal text-foreground">
+                          {event.type === 'tracker' ? event.trackerTitle : event.projectTitle}
+                        </p>
+                        {event.type === 'tracker' && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Projet: {event.projectTitle}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              })()}
+            </div>
           </div>
         )}
 
