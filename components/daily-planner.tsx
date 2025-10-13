@@ -37,9 +37,19 @@ export function DailyPlanner() {
   const [generating, setGenerating] = useState(false)
   const [availableHours, setAvailableHours] = useState(8)
   const [hasPlanning, setHasPlanning] = useState(false)
+  const [currentTime, setCurrentTime] = useState(new Date())
 
   useEffect(() => {
     fetchDailyPlan()
+  }, [])
+
+  // Mettre à jour l'heure actuelle toutes les minutes
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 60000) // 60000ms = 1 minute
+
+    return () => clearInterval(timer)
   }, [])
 
   async function fetchDailyPlan() {
@@ -91,6 +101,15 @@ export function DailyPlanner() {
     } catch (error) {
       console.error("Erreur suppression:", error)
     }
+  }
+
+  // Fonction pour vérifier si une tâche est passée
+  function isTaskPast(scheduledTime: string): boolean {
+    const [hours, minutes] = scheduledTime.split(':').map(Number)
+    const taskTime = new Date()
+    taskTime.setHours(hours, minutes, 0, 0)
+
+    return currentTime > taskTime
   }
 
   async function generateWithConfig(config: { intensity: string; style: string; selectedActivities: string[] }) {
@@ -184,6 +203,7 @@ export function DailyPlanner() {
             const isBreak = task.itemType === 'break'
             const isSuggestion = task.isSuggested
             const isCustomActivity = task.itemType === 'custom_activity'
+            const isPast = isTaskPast(task.scheduledTime)
 
             return (
               <div key={task.id} className="relative group">
@@ -194,7 +214,9 @@ export function DailyPlanner() {
                     isCustomActivity ? "bg-accent/5 border-accent/30" :
                     "bg-card/50 border-border"
                   } ${
-                    task.completed ? "opacity-50" : "hover:border-accent/50"
+                    task.completed ? "opacity-50" :
+                    isPast ? "opacity-40 grayscale" :
+                    "hover:border-accent/50"
                   }`}
                 >
                   <div className="flex items-start gap-3">
