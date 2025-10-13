@@ -57,7 +57,10 @@ export function DailyPlanner() {
     setLoading(true)
     try {
       const dateParam = selectedDate.toISOString().split('T')[0]
-      const response = await fetch(`/api/daily-plan?date=${dateParam}`)
+      // Cache avec revalidation : données fraîches mais performantes
+      const response = await fetch(`/api/daily-plan?date=${dateParam}`, {
+        next: { revalidate: 30 }
+      })
       if (response.ok) {
         const data = await response.json()
         setTasks(data.tasks || [])
@@ -100,7 +103,7 @@ export function DailyPlanner() {
     )
     setTasks(newTasks)
 
-    // Sauvegarder en base
+    // Sauvegarder en base (mutations : pas de cache)
     try {
       await fetch(`/api/daily-plan/items/${taskId}`, {
         method: "PATCH",

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClientFromRequest } from "@/lib/supabase-server"
 import { getUserContext, formatUserContextForAI, getUserRecommendations } from "@/lib/user-context"
 
+// Cache intelligent : revalider toutes les 30 secondes
+export const revalidate = 30
+
 interface PlanningConfig {
   intensity: 'light' | 'moderate' | 'intense'
   style: 'mixed' | 'thematic_blocks'
@@ -919,6 +922,9 @@ async function generateRelaxationSuggestion(params: {
     }
   }
 
+  // Déterminer le moment de la journée pour contextualiser la suggestion
+  const timeOfDay = currentHour < 12 ? 'matin' : currentHour < 17 ? 'après-midi' : currentHour < 21 ? 'soirée' : 'tard dans la soirée'
+
   const prompt = `Tu es un assistant de bien-être. Analyse ce planning de journée et suggère UNE activité relaxante adaptée.
 ${userContextText}
 Planning actuel:
@@ -929,8 +935,8 @@ ${customActivities && customActivities.length > 0
   ? customActivities.map(a => `- ${a.title} (${a.duration}, type: ${a.type})`).join('\n')
   : 'Aucune activité personnalisée sélectionnée'}
 
-Heure actuelle: ${currentHour}:${String(currentMinute).padStart(2, '0')}
-Ville: ${userCity}
+⏰ Heure de la suggestion: ${currentHour}h${String(currentMinute).padStart(2, '0')} (${timeOfDay})
+📍 Ville: ${userCity}
 
 Lieux disponibles:
 ${locations?.map(l => `- ${l.name} (${l.location_type}): ${l.description}`).join('\n') || 'Aucun lieu disponible'}
@@ -943,7 +949,14 @@ Réponds UNIQUEMENT avec un JSON valide (pas de markdown):
   "location": "Nom du lieu si applicable, ou null"
 }
 
-IMPORTANT: Tiens compte des activités personnalisées sélectionnées pour faire des suggestions cohérentes et complémentaires. L'activité doit être adaptée au moment de la journée et au type de travail déjà effectué.`
+IMPORTANT:
+- La suggestion DOIT être adaptée au moment de la journée (${timeOfDay}, ${currentHour}h${String(currentMinute).padStart(2, '0')})
+- Le matin (6h-12h): privilégier des activités énergisantes (sport, marche, petit-déjeuner dehors)
+- L'après-midi (12h-17h): activités sociales, culturelles, balades
+- La soirée (17h-21h): activités calmes (lecture, yoga, promenade tranquille)
+- Tard le soir (21h+): activités apaisantes pour préparer au sommeil (méditation, lecture, tisane, étirements)
+- Ne JAMAIS suggérer d'activités matinales (petit-déjeuner, réveil, etc.) en soirée ou la nuit
+- Tiens compte des activités personnalisées pour des suggestions cohérentes et complémentaires`
 
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
