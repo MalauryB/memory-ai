@@ -21,18 +21,33 @@ interface Project {
   color?: string
 }
 
+interface Tracker {
+  id: string
+  title: string
+  category: string
+  project_id: string
+  project_title: string
+  frequency: string
+  frequency_value: number
+  start_date: string
+}
+
 interface CalendarEvent {
   projectId: string
   projectTitle: string
   projectCategory: string
   date: string
-  type: "start" | "deadline" | "duration"
+  type: "start" | "deadline" | "duration" | "tracker"
   color: string
+  trackerId?: string
+  trackerTitle?: string
+  frequency?: string
 }
 
 export function CalendarView() {
   const router = useRouter()
   const [projects, setProjects] = useState<Project[]>([])
+  const [trackers, setTrackers] = useState<Tracker[]>([])
   const [loading, setLoading] = useState(true)
   const [visibleProjects, setVisibleProjects] = useState<Set<string>>(new Set())
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -40,6 +55,7 @@ export function CalendarView() {
 
   useEffect(() => {
     fetchProjects()
+    fetchTrackers()
   }, [])
 
   async function fetchProjects() {
@@ -59,6 +75,18 @@ export function CalendarView() {
       console.error("Erreur:", error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function fetchTrackers() {
+    try {
+      const response = await fetch("/api/trackers")
+      if (response.ok) {
+        const data = await response.json()
+        setTrackers(data.trackers || [])
+      }
+    } catch (error) {
+      console.error("Erreur récupération trackers:", error)
     }
   }
 
@@ -141,6 +169,57 @@ export function CalendarView() {
       }
     })
 
+    // Ajouter les trackers
+    trackers.forEach(tracker => {
+      if (!visibleProjects.has(tracker.project_id)) return
+
+      const project = projects.find(p => p.id === tracker.project_id)
+      if (!project) return
+
+      // Générer les dates selon la fréquence
+      const startDate = new Date(tracker.start_date)
+      const viewStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
+      const viewEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
+
+      // Ajuster la date de début si elle est avant la vue
+      let current = new Date(Math.max(startDate.getTime(), viewStart.getTime()))
+
+      while (current <= viewEnd) {
+        const shouldShow = (() => {
+          switch (tracker.frequency) {
+            case "daily":
+              return true
+            case "every_x_days": {
+              const daysDiff = Math.floor((current.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+              return daysDiff % tracker.frequency_value === 0
+            }
+            case "weekly": {
+              const daysDiff = Math.floor((current.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+              return daysDiff % 7 === 0
+            }
+            default:
+              return false
+          }
+        })()
+
+        if (shouldShow) {
+          events.push({
+            projectId: tracker.project_id,
+            projectTitle: tracker.project_title,
+            projectCategory: tracker.category,
+            date: current.toISOString().split('T')[0],
+            type: "tracker",
+            color: project.color || "#8b5cf6",
+            trackerId: tracker.id,
+            trackerTitle: tracker.title,
+            frequency: tracker.frequency
+          })
+        }
+
+        current.setDate(current.getDate() + 1)
+      }
+    })
+
     return events
   }
 
@@ -168,9 +247,12 @@ export function CalendarView() {
     return days
   }
 
+  // Mémoriser les événements du calendrier pour éviter de les régénérer à chaque fois
+  const calendarEvents = generateCalendarEvents()
+
   function getEventsForDay(date: Date): CalendarEvent[] {
     const dateStr = date.toISOString().split('T')[0]
-    return generateCalendarEvents().filter(event => event.date === dateStr)
+    return calendarEvents.filter(event => event.date === dateStr)
   }
 
   function changeMonth(delta: number) {
@@ -329,19 +411,27 @@ export function CalendarView() {
 
                         return (
                           <div
-                            key={`${event.projectId}-${idx}`}
+                            key={`${event.projectId}-${event.trackerId || idx}`}
                             className="text-[8px] rounded px-0.5 py-0.5 truncate leading-none"
                             style={{
                               backgroundColor: `${event.color}20`,
                               color: event.color,
                               borderLeft: `2px solid ${event.color}`
                             }}
-                            title={`${event.projectTitle} - ${event.type === 'start' ? 'Début' : event.type === 'deadline' ? 'Échéance' : ''}`}
+                            title={`${event.projectTitle} - ${
+                              event.type === 'start' ? 'Début' :
+                              event.type === 'deadline' ? 'Échéance' :
+                              event.type === 'tracker' ? 'Tracker' :
+                              ''
+                            }`}
                           >
                             {event.type === 'start' && '▶ '}
                             {event.type === 'deadline' && '🏁 '}
                             {event.type === 'duration' && '—'}
-                            <span className="ml-0.5">{event.projectTitle}</span>
+                            {event.type === 'tracker' && '✓ '}
+                            <span className="ml-0.5">
+                              {event.type === 'tracker' ? event.trackerTitle : event.projectTitle}
+                            </span>
                           </div>
                         )
                       })}
@@ -393,7 +483,7 @@ export function CalendarView() {
                       ) : (
                         events.map((event, idx) => (
                           <div
-                            key={`${event.projectId}-${idx}`}
+                            key={`${event.projectId}-${event.trackerId || idx}`}
                             className="text-[10px] rounded p-1.5 cursor-pointer hover:opacity-80 transition-opacity"
                             style={{
                               backgroundColor: `${event.color}15`,
@@ -405,9 +495,10 @@ export function CalendarView() {
                               {event.type === 'start' && '▶ Début'}
                               {event.type === 'deadline' && '🏁 Échéance'}
                               {event.type === 'duration' && '— En cours'}
+                              {event.type === 'tracker' && '✓ Tracker'}
                             </div>
                             <div className="text-[9px] font-normal text-foreground leading-tight">
-                              {event.projectTitle}
+                              {event.type === 'tracker' ? event.trackerTitle : event.projectTitle}
                             </div>
                           </div>
                         ))
@@ -434,6 +525,10 @@ export function CalendarView() {
             <div className="flex items-center gap-1">
               <span>—</span>
               <span>Durée</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span>✓</span>
+              <span>Tracker</span>
             </div>
           </div>
         </div>
