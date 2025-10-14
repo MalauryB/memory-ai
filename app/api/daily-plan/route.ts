@@ -492,7 +492,52 @@ async function generateIntelligentDailyPlan(config: {
     intense: { workRatio: 0.9, breakDuration: 5, betweenTasksBreak: 3 }
   }[intensity] || intensityConfig.moderate
 
-  const availableMinutes = dailyWorkHours * 60 * intensityConfig.workRatio
+  // ⚡ FIX : Calculer les VRAIES heures disponibles (hors travail salarié)
+  // Au lieu d'utiliser dailyWorkHours qui est abstrait
+  const [workStartHour] = workHoursStart.split(':').map(Number)
+  const [workEndHour] = workHoursEnd.split(':').map(Number)
+  const [wakeHour, wakeMinute] = (wakeUpTime || "07:00:00").split(':').map(Number)
+  const [sleepHour] = (sleepTime || "23:00:00").split(':').map(Number)
+
+  // Heure de fin de routine matinale
+  let morningEndHour = wakeHour
+  let morningEndMinute = wakeMinute + morningRoutineDuration
+  while (morningEndMinute >= 60) {
+    morningEndHour += 1
+    morningEndMinute -= 60
+  }
+
+  // Heure de début de routine du soir
+  let nightStartHour = sleepHour
+  let nightStartMinute = 0 - nightRoutineDuration
+  while (nightStartMinute < 0) {
+    nightStartHour -= 1
+    nightStartMinute += 60
+  }
+
+  // Calculer les minutes disponibles RÉELLES
+  let totalAvailableMinutes = 0
+
+  // Temps du matin : de fin de routine matinale à début du travail
+  if (morningEndHour < workStartHour) {
+    const morningMinutes = (workStartHour - morningEndHour) * 60 - morningEndMinute
+    totalAvailableMinutes += morningMinutes
+  }
+
+  // Temps du soir : de fin du travail à début de routine du soir
+  if (workEndHour < nightStartHour) {
+    const eveningMinutes = (nightStartHour - workEndHour) * 60 + nightStartMinute
+    totalAvailableMinutes += eveningMinutes
+  }
+
+  // Appliquer le ratio d'intensité
+  const availableMinutes = totalAvailableMinutes * intensityConfig.workRatio
+
+  console.log(`⏰ Calcul temps disponible:`)
+  console.log(`   - Matin (${morningEndHour}:${String(morningEndMinute).padStart(2, '0')} → ${workStartHour}:00): ${(workStartHour - morningEndHour) * 60 - morningEndMinute}min`)
+  console.log(`   - Soir (${workEndHour}:00 → ${nightStartHour}:${String(nightStartMinute).padStart(2, '0')}): ${(nightStartHour - workEndHour) * 60 + nightStartMinute}min`)
+  console.log(`   - Total brut: ${totalAvailableMinutes}min (${Math.floor(totalAvailableMinutes / 60)}h${totalAvailableMinutes % 60})`)
+  console.log(`   - Avec ratio ${intensityConfig.workRatio}: ${Math.floor(availableMinutes)}min (${Math.floor(availableMinutes / 60)}h${Math.floor(availableMinutes % 60)})`)
 
   // 2. Scorer et trier les substeps
   const scoredSubsteps = substeps.map((substep) => {
@@ -544,18 +589,9 @@ async function generateIntelligentDailyPlan(config: {
 
   // 3. Déterminer l'heure de début et de fin disponibles
   const [startHour, startMinute] = now.split(':').map(Number)
-  const [workStartHour] = workHoursStart.split(':').map(Number)
-  const [workEndHour] = workHoursEnd.split(':').map(Number)
-  const [wakeHour, wakeMinute] = (wakeUpTime || "07:00:00").split(':').map(Number)
-  const [sleepHour] = (sleepTime || "23:00:00").split(':').map(Number)
 
-  // Calculer l'heure de début en tenant compte de la routine matinale
-  let morningEndHour = wakeHour
-  let morningEndMinute = wakeMinute + morningRoutineDuration
-  while (morningEndMinute >= 60) {
-    morningEndHour += 1
-    morningEndMinute -= 60
-  }
+  // Note: workStartHour, workEndHour, wakeHour, wakeMinute, sleepHour, morningEndHour/Minute
+  // sont déjà calculés plus haut pour le calcul des minutes disponibles, on les réutilise
 
   // Déterminer l'heure de début selon si c'est aujourd'hui ou un jour futur
   let currentHour: number
@@ -592,6 +628,9 @@ async function generateIntelligentDailyPlan(config: {
 
   console.log(`⏰ Plage horaire disponible: ${currentHour}:${String(currentMinute).padStart(2, '0')} - ${endHour}:${String(endMinute).padStart(2, '0')}`)
   console.log(`🚫 Heures de travail salarié: ${workStartHour}:00 - ${workEndHour}:00`)
+  console.log(`📊 Nombre de substeps à planifier: ${scoredSubsteps.length}`)
+  console.log(`⏱️ Minutes disponibles: ${availableMinutes}`)
+  console.log(`🔥 Intensité: ${intensity} (ratio: ${intensityConfig.workRatio})`)
 
   // 4. Planifier selon le style
   const dailyPlan: DailyPlanTask[] = []
@@ -640,8 +679,18 @@ async function generateIntelligentDailyPlan(config: {
     }
   } else {
     // Style mixte - alterner les catégories
+    console.log(`🎯 Début de la planification (style: ${style})`)
+    let taskIndex = 0
     for (const substep of scoredSubsteps) {
-      if (currentHour >= endHour) break
+      taskIndex++
+      console.log(`\n📝 Tâche ${taskIndex}/${scoredSubsteps.length}: ${substep.title}`)
+      console.log(`   Durée: ${substep.estimated_duration}, Score: ${substep.priority_score}`)
+      console.log(`   Heure actuelle: ${currentHour}:${String(currentMinute).padStart(2, '0')}, Minutes utilisées: ${currentMinutes}/${availableMinutes}`)
+
+      if (currentHour >= endHour) {
+        console.log(`   ❌ ARRÊT: Heure de fin atteinte (${currentHour} >= ${endHour})`)
+        break
+      }
 
       const result = addTaskToPlan({
         task: substep,
@@ -660,14 +709,19 @@ async function generateIntelligentDailyPlan(config: {
         workEndHour
       })
 
-      if (!result) break
+      if (!result) {
+        console.log(`   ❌ ARRÊT: addTaskToPlan a retourné null`)
+        break
+      }
 
+      console.log(`   ✅ Tâche ajoutée à ${result.currentHour}:${String(result.currentMinute).padStart(2, '0')}`)
       currentHour = result.currentHour
       currentMinute = result.currentMinute
       currentMinutes = result.currentMinutes
       lastBreakTime = result.lastBreakTime
       breakCounter = result.breakCounter
     }
+    console.log(`\n🎯 Planning terminé: ${dailyPlan.length} tâches ajoutées`)
   }
 
   // 5. Insérer les activités personnalisées
@@ -788,30 +842,42 @@ function addTaskToPlan(params: {
 
   // Limite de récursion pour éviter les boucles infinies
   if (recursionDepth > 50) {
-    console.warn(`⚠️ Limite de récursion atteinte pour la tâche: ${task.title}`)
+    console.warn(`      ⚠️ REJET: Limite de récursion atteinte (${recursionDepth})`)
     return null
   }
 
   const durationInMinutes = parseDuration(task.estimated_duration)
 
-  if (currentMinutes + durationInMinutes > availableMinutes) return null
+  if (currentMinutes + durationInMinutes > availableMinutes) {
+    console.log(`      ⚠️ REJET: Pas assez de minutes disponibles (${currentMinutes} + ${durationInMinutes} > ${availableMinutes})`)
+    return null
+  }
 
   const taskEndHour = currentHour + Math.floor((currentMinute + durationInMinutes) / 60)
   const taskEndMinute = (currentMinute + durationInMinutes) % 60
 
-  if (taskEndHour > endHour || (taskEndHour === endHour && taskEndMinute > 0)) return null
+  if (taskEndHour > endHour || (taskEndHour === endHour && taskEndMinute > 0)) {
+    console.log(`      ⚠️ REJET: Dépasse l'heure de fin (fin tâche: ${taskEndHour}:${String(taskEndMinute).padStart(2, '0')}, limite: ${endHour}:00)`)
+    return null
+  }
 
   // Vérifier si le créneau chevauche les heures de travail salarié
-  const isInWorkHours = (currentHour >= workStartHour && currentHour < workEndHour) ||
-                        (taskEndHour > workStartHour && taskEndHour <= workEndHour)
+  // Une tâche est dans les heures de travail si elle COMMENCE pendant ces heures
+  const isInWorkHours = currentHour >= workStartHour && currentHour < workEndHour
 
   if (isInWorkHours) {
+    if (recursionDepth === 0) {
+      console.log(`      ⚙️ Créneau dans heures travail (${currentHour}h), on saute à ${workEndHour}h`)
+    }
     // Sauter après les heures de travail
     let nextHour = workEndHour
     let nextMinute = 0
 
     // Si on dépasse la fin de la journée, abandonner
-    if (nextHour >= endHour) return null
+    if (nextHour >= endHour) {
+      console.log(`      ⚠️ REJET: Après les heures de travail, on dépasse la fin de journée (${nextHour} >= ${endHour})`)
+      return null
+    }
 
     // Ré-essayer après les heures de travail
     return addTaskToPlan({
@@ -824,6 +890,9 @@ function addTaskToPlan(params: {
 
   // Vérifier si le créneau est bloqué (créneaux personnalisés)
   if (isTimeSlotBlocked(currentHour, currentMinute, durationInMinutes)) {
+    if (recursionDepth === 0) {
+      console.log(`      ⚙️ Créneau bloqué, on cherche le suivant`)
+    }
     // Essayer de trouver le prochain créneau disponible
     let nextHour = currentHour
     let nextMinute = currentMinute + 15 // Avancer par intervalles de 15 minutes
@@ -834,7 +903,10 @@ function addTaskToPlan(params: {
     }
 
     // Si on dépasse la fin de la journée, abandonner
-    if (nextHour >= endHour) return null
+    if (nextHour >= endHour) {
+      console.log(`      ⚠️ REJET: Plus de créneaux disponibles après créneaux bloqués`)
+      return null
+    }
 
     // Ré-essayer avec le nouveau créneau
     return addTaskToPlan({
