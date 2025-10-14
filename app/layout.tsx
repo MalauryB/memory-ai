@@ -5,6 +5,7 @@ import { GeistMono } from "geist/font/mono"
 import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 import { ThemeProvider } from "@/components/theme-provider"
+import { SWRProvider } from "@/lib/swr-provider"
 import { Toaster } from "@/components/ui/toaster"
 import "./globals.css"
 
@@ -36,11 +37,13 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Suspense fallback={<div>Loading...</div>}>
-            {children}
-            <Analytics />
-          </Suspense>
-          <Toaster />
+          <SWRProvider>
+            <Suspense fallback={<div>Loading...</div>}>
+              {children}
+              <Analytics />
+            </Suspense>
+            <Toaster />
+          </SWRProvider>
         </ThemeProvider>
       </body>
     </html>

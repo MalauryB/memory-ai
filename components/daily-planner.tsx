@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import useSWR, { mutate } from "swr"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -32,17 +33,26 @@ interface DailyTask {
 }
 
 export function DailyPlanner() {
-  const [tasks, setTasks] = useState<DailyTask[]>([])
-  const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
-  const [availableHours, setAvailableHours] = useState(8)
-  const [hasPlanning, setHasPlanning] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState(new Date())
 
-  useEffect(() => {
-    fetchDailyPlan()
-  }, [selectedDate])
+  const dateParam = selectedDate.toISOString().split('T')[0]
+
+  // ⚡ OPTIMISATION : Utiliser SWR pour le cache automatique
+  const { data, error, isLoading, mutate: refreshPlan } = useSWR(
+    `/api/daily-plan?date=${dateParam}`,
+    {
+      // Revalider toutes les 60 secondes si la page est active
+      refreshInterval: 60000,
+      // Garder les données précédentes pendant le rechargement
+      keepPreviousData: true,
+    }
+  )
+
+  const tasks = data?.tasks || []
+  const availableHours = data?.availableHours || 8
+  const hasPlanning = !data?.needsGeneration && tasks.length > 0
 
   // Mettre à jour l'heure actuelle toutes les minutes
   useEffect(() => {
@@ -52,24 +62,6 @@ export function DailyPlanner() {
 
     return () => clearInterval(timer)
   }, [])
-
-  async function fetchDailyPlan() {
-    setLoading(true)
-    try {
-      const dateParam = selectedDate.toISOString().split('T')[0]
-      const response = await fetch(`/api/daily-plan?date=${dateParam}`)
-      if (response.ok) {
-        const data = await response.json()
-        setTasks(data.tasks || [])
-        setAvailableHours(data.availableHours || 8)
-        setHasPlanning(!data.needsGeneration && data.tasks?.length > 0)
-      }
-    } catch (error) {
-      console.error("Erreur:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   function changeDate(days: number) {
     const newDate = new Date(selectedDate)
@@ -95,36 +87,58 @@ export function DailyPlanner() {
   }
 
   async function toggleTaskCompletion(taskId: string) {
-    const newTasks = tasks.map((task) =>
-      task.id === taskId ? { ...task, completed: !task.completed } : task
-    )
-    setTasks(newTasks)
+    const task = tasks.find(t => t.id === taskId)
+    if (!task) return
 
-    // Sauvegarder en base (mutations : pas de cache)
+    // ⚡ OPTIMISATION : Mutation optimiste - mettre à jour l'UI immédiatement
+    const newTasks = tasks.map((t) =>
+      t.id === taskId ? { ...t, completed: !t.completed } : t
+    )
+
+    // Mettre à jour le cache local immédiatement
+    await refreshPlan(
+      { ...data, tasks: newTasks },
+      false // Ne pas revalider immédiatement
+    )
+
+    // Sauvegarder en base en arrière-plan
     try {
       await fetch(`/api/daily-plan/items/${taskId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          completed: !tasks.find(t => t.id === taskId)?.completed
+          completed: !task.completed
         })
       })
     } catch (error) {
       console.error("Erreur sauvegarde:", error)
+      // En cas d'erreur, revalider pour récupérer l'état correct
+      refreshPlan()
     }
   }
 
   async function deleteTask(taskId: string) {
+    // ⚡ OPTIMISATION : Mutation optimiste
+    const newTasks = tasks.filter(t => t.id !== taskId)
+
+    // Mettre à jour le cache immédiatement
+    await refreshPlan(
+      { ...data, tasks: newTasks },
+      false
+    )
+
     try {
       const response = await fetch(`/api/daily-plan/items/${taskId}`, {
         method: "DELETE"
       })
 
-      if (response.ok) {
-        setTasks(tasks.filter(t => t.id !== taskId))
+      if (!response.ok) {
+        // En cas d'erreur, revalider
+        refreshPlan()
       }
     } catch (error) {
       console.error("Erreur suppression:", error)
+      refreshPlan()
     }
   }
 
@@ -139,11 +153,8 @@ export function DailyPlanner() {
 
   async function generateWithConfig(config: { intensity: string; style: string; selectedActivities: string[] }) {
     setGenerating(true)
-    // Vider le planning pendant la génération pour forcer le rafraîchissement
-    setTasks([])
 
     try {
-      const dateParam = selectedDate.toISOString().split('T')[0]
       const response = await fetch("/api/daily-plan", {
         method: "POST",
         headers: {
@@ -153,17 +164,16 @@ export function DailyPlanner() {
           ...config,
           date: dateParam,
           currentTime: new Date().toTimeString().split(' ')[0].substring(0, 5),
-          forceRegenerate: true // Forcer la régénération
+          forceRegenerate: true
         })
       })
 
       if (response.ok) {
-        const data = await response.json()
-        console.log("Nouveau planning généré:", data.tasks?.length, "tâches")
-        // Force React à re-rendre en créant un nouveau tableau
-        setTasks([...data.tasks || []])
-        setAvailableHours(data.availableHours || 8)
-        setHasPlanning(true)
+        const newData = await response.json()
+        console.log("Nouveau planning généré:", newData.tasks?.length, "tâches")
+
+        // ⚡ OPTIMISATION : Mettre à jour le cache SWR immédiatement
+        await refreshPlan(newData, false)
       } else {
         console.error("Erreur génération:", response.status)
       }
@@ -174,7 +184,7 @@ export function DailyPlanner() {
     }
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="space-y-12 max-w-4xl mx-auto">
         <div className="space-y-4">

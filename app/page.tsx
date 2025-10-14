@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { mutate } from "swr"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Calendar, LogOut, FolderKanban, ListTodo, User, Activity, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react"
@@ -11,41 +12,50 @@ import { TrackersView } from "@/components/trackers-view"
 import { AgendaView } from "@/components/agenda-view"
 import { CalendarView } from "@/components/calendar-view"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { getUser, signOut } from "@/lib/auth"
+import { signOut } from "@/lib/auth"
+import { useAuth } from "@/hooks/use-auth"
 
 type View = "goals" | "planner" | "trackers" | "agenda" | "calendar"
 
 export default function Home() {
   const [currentView, setCurrentView] = useState<View>("goals")
-  const [loading, setLoading] = useState(true)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const router = useRouter()
 
-  useEffect(() => {
-    checkUser()
-  }, [])
+  // ⚡ OPTIMISATION : Utiliser useAuth avec SWR pour cache + vérification non-bloquante
+  const { user, isLoading, isAuthenticated } = useAuth()
 
-  async function checkUser() {
-    const user = await getUser()
-    if (!user) {
+  // Rediriger si non authentifié (après vérification)
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
       router.push("/auth")
-    } else {
-      setLoading(false)
     }
-  }
+  }, [isLoading, isAuthenticated, router])
+
+  // ⚡ OPTIMISATION : Prefetch des données critiques pour pré-peupler le cache SWR
+  useEffect(() => {
+    if (isAuthenticated) {
+      const today = new Date().toISOString().split('T')[0]
+
+      // Précharger en arrière-plan et pré-peupler le cache SWR
+      fetch("/api/projects")
+        .then(r => r.json())
+        .then(data => mutate("/api/projects", data, false))
+        .catch(() => {})
+
+      fetch(`/api/daily-plan?date=${today}`)
+        .then(r => r.json())
+        .then(data => mutate(`/api/daily-plan?date=${today}`, data, false))
+        .catch(() => {})
+    }
+  }, [isAuthenticated])
 
   async function handleSignOut() {
     await signOut()
     router.push("/auth")
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground font-normal">Chargement...</p>
-      </div>
-    )
-  }
+  // ⚡ Afficher l'UI immédiatement, même pendant le chargement
 
   return (
     <div className="min-h-screen flex">

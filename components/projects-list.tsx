@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import useSWR from "swr"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Plus, Calendar, Loader2 } from "lucide-react"
@@ -30,27 +30,17 @@ interface Project {
 }
 
 export function ProjectsList() {
-  const [projects, setProjects] = useState<Project[]>([])
-  const [loading, setLoading] = useState(true)
   const router = useRouter()
 
-  useEffect(() => {
-    fetchProjects()
-  }, [])
+  // ⚡ OPTIMISATION : Utiliser SWR pour le cache automatique
+  const { data, error, isLoading } = useSWR("/api/projects", {
+    // Revalider toutes les 30 secondes
+    refreshInterval: 30000,
+    // Garder les données précédentes pendant le rechargement
+    keepPreviousData: true,
+  })
 
-  async function fetchProjects() {
-    try {
-      const response = await fetch("/api/projects")
-      if (response.ok) {
-        const data = await response.json()
-        setProjects(data.projects || [])
-      }
-    } catch (error) {
-      console.error("Erreur lors de la récupération des projets:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const projects = data?.projects || []
 
   const formatDeadline = (deadline: string | null) => {
     if (!deadline) return null
@@ -77,7 +67,7 @@ export function ProjectsList() {
     }
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import useSWR from "swr"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -29,29 +30,15 @@ interface UpcomingStep {
 
 export function AgendaView() {
   const router = useRouter()
-  const [steps, setSteps] = useState<UpcomingStep[]>([])
-  const [loading, setLoading] = useState(true)
   const [updatingStep, setUpdatingStep] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchSteps()
-  }, [])
+  // ⚡ OPTIMISATION : Utiliser SWR pour le cache automatique
+  const { data, error, isLoading, mutate: refreshSteps } = useSWR("/api/agenda", {
+    refreshInterval: 30000, // Revalider toutes les 30 secondes
+    keepPreviousData: true,
+  })
 
-  async function fetchSteps() {
-    try {
-      const response = await fetch("/api/agenda")
-      if (response.ok) {
-        const data = await response.json()
-        setSteps(data.steps)
-      } else {
-        console.error("Erreur lors de la récupération des étapes")
-      }
-    } catch (error) {
-      console.error("Erreur:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const steps = data?.steps || []
 
   async function updateStepStatus(
     projectId: string,
@@ -59,6 +46,15 @@ export function AgendaView() {
     newStatus: "pending" | "in_progress" | "completed"
   ) {
     setUpdatingStep(stepId)
+
+    // ⚡ OPTIMISATION : Mutation optimiste
+    const optimisticSteps = steps.map((step: UpcomingStep) =>
+      step.stepId === stepId ? { ...step, stepStatus: newStatus } : step
+    ).filter((step: UpcomingStep) => step.stepStatus !== "completed") // Retirer si complété
+
+    // Mettre à jour le cache immédiatement
+    await refreshSteps({ steps: optimisticSteps }, false)
+
     try {
       const response = await fetch(`/api/projects/${projectId}/steps/${stepId}`, {
         method: "PATCH",
@@ -68,12 +64,14 @@ export function AgendaView() {
         body: JSON.stringify({ status: newStatus }),
       })
 
-      if (response.ok) {
-        // Recharger les étapes
-        await fetchSteps()
+      if (!response.ok) {
+        // En cas d'erreur, revalider
+        refreshSteps()
       }
     } catch (error) {
       console.error("Erreur:", error)
+      // Revalider en cas d'erreur
+      refreshSteps()
     } finally {
       setUpdatingStep(null)
     }
@@ -118,7 +116,7 @@ export function AgendaView() {
     return acc
   }, {} as Record<string, { project: any; steps: UpcomingStep[] }>)
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

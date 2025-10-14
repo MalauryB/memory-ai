@@ -1,50 +1,43 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import useSWR from "swr"
 import { Button } from "@/components/ui/button"
 import { Plus, Loader2, Activity } from "lucide-react"
 import { TrackerCard } from "@/components/tracker-card"
 import { Tracker } from "@/types/tracker"
 
 export function TrackersView() {
-  const [trackers, setTrackers] = useState<Tracker[]>([])
-  const [completedToday, setCompletedToday] = useState<Set<string>>(new Set())
-  const [loading, setLoading] = useState(true)
+  // ⚡ OPTIMISATION : Une seule requête avec SWR
+  const { data, error, isLoading, mutate: refreshTrackers } = useSWR("/api/trackers", {
+    refreshInterval: 30000, // Revalider toutes les 30 secondes
+    keepPreviousData: true,
+  })
 
-  useEffect(() => {
-    fetchTrackers()
-    fetchCompletionsToday()
-  }, [])
-
-  async function fetchTrackers() {
-    try {
-      const response = await fetch("/api/trackers")
-      if (response.ok) {
-        const data = await response.json()
-        setTrackers(data.trackers || [])
-      }
-    } catch (error) {
-      console.error("Erreur lors de la récupération des trackers:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function fetchCompletionsToday() {
-    try {
-      const today = new Date().toISOString().split("T")[0]
-      const response = await fetch(`/api/trackers/completions?date=${today}`)
-      if (response.ok) {
-        const data = await response.json()
-        const completedIds = new Set(data.completions?.map((c: any) => c.tracker_id) || [])
-        setCompletedToday(completedIds)
-      }
-    } catch (error) {
-      console.error("Erreur lors de la récupération des complétions:", error)
-    }
-  }
+  const trackers = data?.trackers || []
+  const completedTodayIds = new Set(data?.completedToday || [])
 
   async function handleComplete(trackerId: string, date: string) {
+    // ⚡ OPTIMISATION : Mutation optimiste - Mettre à jour l'UI immédiatement
+    const newCompletedToday = [...(data?.completedToday || []), trackerId]
+    const optimisticData = {
+      ...data,
+      completedToday: newCompletedToday,
+      trackers: trackers.map((t: Tracker) =>
+        t.id === trackerId
+          ? {
+              ...t,
+              completed_today: true,
+              total_completions: t.total_completions + 1,
+              current_streak: t.current_streak + 1,
+            }
+          : t
+      ),
+    }
+
+    // Mettre à jour le cache immédiatement
+    await refreshTrackers(optimisticData, false)
+
     try {
       const response = await fetch("/api/trackers/complete", {
         method: "POST",
@@ -52,15 +45,14 @@ export function TrackersView() {
         body: JSON.stringify({ tracker_id: trackerId, completion_date: date }),
       })
 
-      if (response.ok) {
-        // Mettre à jour l'état local
-        setCompletedToday((prev) => new Set([...prev, trackerId]))
-
-        // Rafraîchir les trackers pour mettre à jour les statistiques
-        fetchTrackers()
+      if (!response.ok) {
+        // En cas d'erreur, revalider pour récupérer l'état correct
+        refreshTrackers()
       }
     } catch (error) {
       console.error("Erreur lors de la complétion du tracker:", error)
+      // Revalider en cas d'erreur
+      refreshTrackers()
     }
   }
 
@@ -74,7 +66,7 @@ export function TrackersView() {
     console.log("Ouvrir le tracker:", trackerId)
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -83,9 +75,9 @@ export function TrackersView() {
   }
 
   // Séparer les trackers actifs et complétés aujourd'hui
-  const activeTrackers = trackers.filter((t) => t.is_active)
-  const todayTrackers = activeTrackers.filter((t) => !completedToday.has(t.id))
-  const completedTrackers = activeTrackers.filter((t) => completedToday.has(t.id))
+  const activeTrackers = trackers.filter((t: Tracker) => t.is_active)
+  const todayTrackers = activeTrackers.filter((t: Tracker) => !t.completed_today)
+  const completedTrackers = activeTrackers.filter((t: Tracker) => t.completed_today)
 
   if (trackers.length === 0) {
     return (
@@ -108,7 +100,7 @@ export function TrackersView() {
   }
 
   // Calculer les statistiques globales
-  const totalCompletionsToday = completedToday.size
+  const totalCompletionsToday = completedTrackers.length
   const totalActiveTrackers = activeTrackers.length
   const completionRate = totalActiveTrackers > 0 ? Math.round((totalCompletionsToday / totalActiveTrackers) * 100) : 0
 

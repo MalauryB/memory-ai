@@ -31,6 +31,7 @@ export interface Tracker {
   created_at: string
   updated_at: string
   is_active: boolean
+  completed_today?: boolean // Indique si le tracker a été complété aujourd'hui
 }
 
 export interface TrackerCompletion {

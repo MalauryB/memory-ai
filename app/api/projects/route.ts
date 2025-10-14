@@ -112,13 +112,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
     }
 
-    // Récupérer les projets de l'utilisateur
+    // ⚡ OPTIMISATION : Récupérer projets ET count des étapes en parallèle
     const { data: projects, error: projectsError } = await supabase
       .from("projects")
-      .select(`
-        *,
-        project_steps (*)
-      `)
+      .select("*, project_steps(id)")  // Récupère seulement les IDs des étapes
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
 

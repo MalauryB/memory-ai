@@ -46,65 +46,94 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Erreur lors de la récupération" }, { status: 500 })
     }
 
-    // Calculer les statistiques pour chaque tracker
+    // ⚡ OPTIMISATION : Récupérer TOUTES les complétions en UNE SEULE requête
     const today = new Date().toISOString().split("T")[0]
+    const trackerIds = (trackingSubsteps || []).map((s: any) => s.id)
 
-    const trackersWithStats = await Promise.all(
-      (trackingSubsteps || []).map(async (substep: any) => {
-        // Récupérer les complétions pour ce tracker
-        const { data: completions } = await supabase
+    let allCompletions: any[] = []
+    let completionsToday: any[] = []
+
+    if (trackerIds.length > 0) {
+      // Récupérer toutes les complétions en parallèle
+      const [allCompletionsResult, todayCompletionsResult] = await Promise.all([
+        supabase
           .from("substep_completions")
-          .select("completion_date")
-          .eq("substep_id", substep.id)
-          .order("completion_date", { ascending: false })
+          .select("substep_id, completion_date")
+          .in("substep_id", trackerIds)
+          .order("completion_date", { ascending: false }),
+        supabase
+          .from("substep_completions")
+          .select("substep_id, completion_date")
+          .in("substep_id", trackerIds)
+          .eq("completion_date", today)
+      ])
 
-        const totalCompletions = completions?.length || 0
+      allCompletions = allCompletionsResult.data || []
+      completionsToday = todayCompletionsResult.data || []
+    }
 
-        // Calculer la série actuelle
-        let currentStreak = 0
-        if (completions && completions.length > 0) {
-          const sortedDates = completions.map(c => c.completion_date).sort().reverse()
-          let checkDate = new Date()
+    // Grouper les complétions par tracker
+    const completionsByTracker = new Map<string, string[]>()
+    allCompletions.forEach((c: any) => {
+      if (!completionsByTracker.has(c.substep_id)) {
+        completionsByTracker.set(c.substep_id, [])
+      }
+      completionsByTracker.get(c.substep_id)!.push(c.completion_date)
+    })
 
-          for (const dateStr of sortedDates) {
-            const completionDate = new Date(dateStr)
-            const daysDiff = Math.floor((checkDate.getTime() - completionDate.getTime()) / (1000 * 60 * 60 * 24))
+    // Créer un Set des trackers complétés aujourd'hui
+    const completedTodayIds = new Set(completionsToday.map((c: any) => c.substep_id))
 
-            if (daysDiff <= 1) {
-              currentStreak++
-              checkDate = completionDate
-            } else {
-              break
-            }
+    // ⚡ OPTIMISATION : Calculs simplifiés des statistiques
+    const trackersWithStats = (trackingSubsteps || []).map((substep: any) => {
+      const completions = completionsByTracker.get(substep.id) || []
+      const totalCompletions = completions.length
+
+      // Calculer la série actuelle (simplifié)
+      let currentStreak = 0
+      if (completions.length > 0) {
+        const sortedDates = [...completions].sort().reverse()
+        let checkDate = new Date()
+
+        for (const dateStr of sortedDates) {
+          const completionDate = new Date(dateStr)
+          const daysDiff = Math.floor((checkDate.getTime() - completionDate.getTime()) / (1000 * 60 * 60 * 24))
+
+          if (daysDiff <= 1) {
+            currentStreak++
+            checkDate = completionDate
+          } else {
+            break
           }
         }
+      }
 
-        // Calculer la meilleure série (approximation simple)
-        const bestStreak = currentStreak // Pour l'instant, on garde la série actuelle
+      return {
+        id: substep.id,
+        user_id: user.id,
+        title: substep.title,
+        description: substep.description || "",
+        category: substep.project?.category || "Général",
+        project_title: substep.project?.title || "",
+        project_id: substep.project?.id || "",
+        frequency: substep.recurrence_type || "daily",
+        frequency_value: substep.recurrence_value || 1,
+        start_date: substep.created_at?.split("T")[0] || today,
+        end_date: null,
+        total_completions: totalCompletions,
+        current_streak: currentStreak,
+        best_streak: currentStreak, // Simplifié
+        created_at: substep.created_at,
+        updated_at: substep.updated_at,
+        is_active: substep.status !== "completed",
+        completed_today: completedTodayIds.has(substep.id)
+      }
+    })
 
-        return {
-          id: substep.id,
-          user_id: user.id,
-          title: substep.title,
-          description: substep.description || "",
-          category: substep.project?.category || "Général",
-          project_title: substep.project?.title || "",
-          project_id: substep.project?.id || "",
-          frequency: substep.recurrence_type || "daily",
-          frequency_value: substep.recurrence_value || 1,
-          start_date: substep.created_at?.split("T")[0] || today,
-          end_date: null,
-          total_completions: totalCompletions,
-          current_streak: currentStreak,
-          best_streak: bestStreak,
-          created_at: substep.created_at,
-          updated_at: substep.updated_at,
-          is_active: substep.status !== "completed"
-        }
-      })
-    )
-
-    return NextResponse.json({ trackers: trackersWithStats })
+    return NextResponse.json({
+      trackers: trackersWithStats,
+      completedToday: Array.from(completedTodayIds)
+    })
   } catch (error) {
     console.error("Erreur lors de la récupération des trackers:", error)
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })

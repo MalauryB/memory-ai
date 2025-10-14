@@ -79,54 +79,80 @@ export async function POST(request: NextRequest) {
 
     const today = date || new Date().toISOString().split("T")[0]
     const now = currentTime || new Date().toTimeString().split(' ')[0].substring(0, 5)
+    const actualToday = new Date().toISOString().split("T")[0]
+    const isToday = today === actualToday
+    const todayDayOfWeek = new Date(today).getDay()
 
-    console.log(`📅 Génération planning pour: ${today}`)
+    console.log(`📅 Génération planning pour: ${today}${isToday ? ' (aujourd\'hui)' : ' (jour futur)'}`)
 
-    // Vérifier si un plan existe déjà pour aujourd'hui
-    if (!forceRegenerate) {
-      const { data: existingPlan } = await supabase
+    // ⚡ OPTIMISATION : Paralléliser toutes les requêtes en une seule fois
+    const [
+      existingPlanResult,
+      userProfileResult,
+      projectsResult,
+      customActivitiesResult
+    ] = await Promise.all([
+      // Vérifier si un plan existe déjà (uniquement si pas de régénération forcée)
+      !forceRegenerate ? supabase
         .from("daily_plans")
         .select("*, daily_plan_items(*)")
         .eq("user_id", user?.id || null)
         .eq("plan_date", today)
-        .single()
+        .single() : Promise.resolve({ data: null, error: null }),
 
-      // Si un plan existe déjà, le retourner
-      if (existingPlan && existingPlan.daily_plan_items?.length > 0) {
-        const tasks = existingPlan.daily_plan_items.map((item: any) => ({
-          id: item.id,
-          title: item.title,
-          description: item.description,
-          estimatedDuration: item.substep_id ? null : "30min",
-          scheduledTime: item.scheduled_time?.substring(0, 5) || "09:00",
-          projectTitle: item.project_title,
-          projectCategory: item.project_category,
-          substepId: item.substep_id,
-          priority: 50,
-          itemType: item.item_type || 'substep',
-          completed: item.completed,
-          isSuggested: item.is_suggested
-        }))
-
-        return NextResponse.json({
-          tasks,
-          availableHours: existingPlan.available_hours,
-          fromCache: true
-        })
-      }
-    }
-
-    // 1. Récupérer le profil utilisateur
-    let userProfile: any = null
-    if (user) {
-      const { data: profile } = await supabase
+      // Récupérer le profil utilisateur
+      user ? supabase
         .from("user_profiles")
         .select("*")
         .eq("id", user.id)
-        .single()
-      userProfile = profile
+        .single() : Promise.resolve({ data: null, error: null }),
+
+      // Récupérer les projets actifs
+      supabase
+        .from("projects")
+        .select("id, title, category, deadline, status")
+        .eq("user_id", user?.id || null)
+        .eq("status", "active")
+        .order("deadline", { ascending: true, nullsFirst: false }),
+
+      // Récupérer les activités personnalisées sélectionnées
+      selectedActivities.length > 0 ? supabase
+        .from("custom_activities")
+        .select("*")
+        .in("id", selectedActivities) : Promise.resolve({ data: [], error: null })
+    ])
+
+    // Extraire les résultats
+    const existingPlan = existingPlanResult.data
+    const userProfile = userProfileResult.data
+    const projects = projectsResult.data || []
+    const customActivities = customActivitiesResult.data || []
+
+    // Si un plan existe déjà, le retourner
+    if (!forceRegenerate && existingPlan && existingPlan.daily_plan_items?.length > 0) {
+      const tasks = existingPlan.daily_plan_items.map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        description: item.description,
+        estimatedDuration: item.substep_id ? null : "30min",
+        scheduledTime: item.scheduled_time?.substring(0, 5) || "09:00",
+        projectTitle: item.project_title,
+        projectCategory: item.project_category,
+        substepId: item.substep_id,
+        priority: 50,
+        itemType: item.item_type || 'substep',
+        completed: item.completed,
+        isSuggested: item.is_suggested
+      }))
+
+      return NextResponse.json({
+        tasks,
+        availableHours: existingPlan.available_hours,
+        fromCache: true
+      })
     }
 
+    // Extraire les paramètres du profil utilisateur
     const workHoursStart = userProfile?.work_hours_start || "09:00:00"
     const workHoursEnd = userProfile?.work_hours_end || "18:00:00"
     const dailyWorkHours = userProfile?.daily_work_hours || 8
@@ -140,38 +166,17 @@ export async function POST(request: NextRequest) {
     const nightRoutineDuration = userProfile?.night_routine_duration || 0
     const preferredWorkDays = userProfile?.preferred_work_days || [1, 2, 3, 4, 5]
 
-    // 2. Récupérer les projets actifs
-    const { data: projects, error: projectsError } = await supabase
-      .from("projects")
-      .select("id, title, category, deadline, status")
-      .eq("user_id", user?.id || null)
-      .eq("status", "active")
-      .order("deadline", { ascending: true, nullsFirst: false })
-
-    if (projectsError) {
-      console.error("❌ Erreur requête projets:", projectsError)
+    if (projectsResult.error) {
+      console.error("❌ Erreur requête projets:", projectsResult.error)
     }
 
-    console.log(`📊 Projets trouvés: ${projects?.length || 0}`)
-    if (projects && projects.length > 0) {
+    console.log(`📊 Projets trouvés: ${projects.length}`)
+    if (projects.length > 0) {
       console.log(`   Projets:`, projects.map(p => `${p.title} (${p.status})`).join(', '))
-    } else {
-      console.log(`   User ID: ${user?.id || 'null'}`)
-
-      // Vérifier tous les projets de l'utilisateur
-      const { data: allProjects } = await supabase
-        .from("projects")
-        .select("id, title, status")
-        .eq("user_id", user?.id || null)
-
-      console.log(`   Tous les projets de l'utilisateur: ${allProjects?.length || 0}`)
-      if (allProjects && allProjects.length > 0) {
-        console.log(`   Statuts:`, allProjects.map(p => `${p.title}: ${p.status}`).join(', '))
-      }
     }
 
     // Permettre la génération même sans projets si on a des activités personnalisées
-    if ((!projects || projects.length === 0) && selectedActivities.length === 0) {
+    if (projects.length === 0 && selectedActivities.length === 0) {
       console.log("⚠️ Aucun projet ni activité personnalisée sélectionnée")
       return NextResponse.json({
         tasks: [],
@@ -180,43 +185,31 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // 3. Récupérer les substeps ET les trackers
-    const projectIds = projects?.map((p) => p.id) || []
-    let substeps: any[] = []
-
-    if (projectIds.length > 0) {
-      const { data: fetchedSubsteps } = await supabase
+    // ⚡ OPTIMISATION : Paralléliser les requêtes substeps et blocked slots
+    const projectIds = projects.map((p) => p.id)
+    const [substepsResult, blockedSlotsResult] = await Promise.all([
+      // Récupérer les substeps
+      projectIds.length > 0 ? supabase
         .from("project_substeps")
         .select("*")
         .in("project_id", projectIds)
         .in("status", ["pending", "in_progress"])
         .order("scheduled_date", { ascending: true, nullsFirst: false })
-        .order("order_index", { ascending: true })
+        .order("order_index", { ascending: true }) : Promise.resolve({ data: [], error: null }),
 
-      substeps = fetchedSubsteps || []
-    }
+      // Récupérer les créneaux bloqués
+      supabase
+        .from("blocked_time_slots")
+        .select("*")
+        .eq("user_id", user?.id || null)
+        .contains("days_of_week", [todayDayOfWeek])
+    ])
+
+    const substeps = substepsResult.data || []
+    const blockedSlots = blockedSlotsResult.data || []
 
     console.log(`📝 Substeps trouvées: ${substeps.length}`)
-
-    // 4. Récupérer les activités personnalisées sélectionnées
-    let customActivities: any[] = []
-    if (selectedActivities.length > 0) {
-      const { data: activities } = await supabase
-        .from("custom_activities")
-        .select("*")
-        .in("id", selectedActivities)
-      customActivities = activities || []
-    }
-
     console.log(`🎨 Activités personnalisées sélectionnées: ${customActivities.length}`)
-
-    // 4bis. Récupérer les créneaux horaires bloqués pour aujourd'hui
-    const todayDayOfWeek = new Date(today).getDay()
-    const { data: blockedSlots } = await supabase
-      .from("blocked_time_slots")
-      .select("*")
-      .eq("user_id", user?.id || null)
-      .contains("days_of_week", [todayDayOfWeek])
 
     // 5. Enrichir les substeps
     const enrichedSubsteps: EnrichedSubstep[] = substeps.map((substep: any) => {
@@ -244,6 +237,7 @@ export async function POST(request: NextRequest) {
       intensity,
       style,
       today,
+      isToday,
       userCity,
       supabase,
       anthropicApiKey: process.env.ANTHROPIC_API_KEY,
@@ -350,22 +344,10 @@ export async function GET(request: NextRequest) {
 
     console.log(`📅 Récupération planning pour: ${today}`)
 
-    // Récupérer le plan du jour avec ses items et les enrichir avec les infos des substeps
+    // ⚡ OPTIMISATION : Requête simplifiée sans JOINs imbriqués
     const { data: dailyPlan } = await supabase
       .from("daily_plans")
-      .select(`
-        *,
-        daily_plan_items (
-          *,
-          project_substeps (
-            project_id,
-            project:projects (
-              title,
-              category
-            )
-          )
-        )
-      `)
+      .select("*, daily_plan_items(*)")
       .eq("user_id", user?.id || null)
       .eq("plan_date", today)
       .single()
@@ -378,18 +360,42 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // ⚡ OPTIMISATION : Récupérer les substeps et projets en parallèle seulement si nécessaire
+    const substepIds = dailyPlan.daily_plan_items
+      .filter((item: any) => item.substep_id)
+      .map((item: any) => item.substep_id)
+
+    let substepsMap = new Map()
+    let projectsMap = new Map()
+
+    if (substepIds.length > 0) {
+      const [substepsResult, projectsResult] = await Promise.all([
+        supabase
+          .from("project_substeps")
+          .select("id, estimated_duration, project_id")
+          .in("id", substepIds),
+        supabase
+          .from("projects")
+          .select("id, title, category")
+          .eq("user_id", user?.id || null)
+      ])
+
+      substepsResult.data?.forEach((s: any) => substepsMap.set(s.id, s))
+      projectsResult.data?.forEach((p: any) => projectsMap.set(p.id, p))
+    }
+
     // Transformer les items en format DailyTask
     const tasks = dailyPlan.daily_plan_items
       .sort((a: any, b: any) => a.order_index - b.order_index)
       .map((item: any) => {
-        const substep = item.project_substeps
-        const project = substep?.project
+        const substep = item.substep_id ? substepsMap.get(item.substep_id) : null
+        const project = substep ? projectsMap.get(substep.project_id) : null
 
         return {
           id: item.id,
           title: item.title,
           description: item.description || "",
-          estimatedDuration: item.substep_id ? substep?.estimated_duration || "30min" : "30min",
+          estimatedDuration: substep?.estimated_duration || "30min",
           scheduledTime: item.scheduled_time?.substring(0, 5) || "09:00",
           projectTitle: project?.title,
           projectCategory: project?.category,
@@ -439,6 +445,7 @@ async function generateIntelligentDailyPlan(config: {
   intensity: string
   style: string
   today: string
+  isToday: boolean
   userCity: string
   supabase: any
   anthropicApiKey?: string
@@ -463,6 +470,7 @@ async function generateIntelligentDailyPlan(config: {
     intensity,
     style,
     today,
+    isToday,
     userCity,
     supabase,
     anthropicApiKey,
@@ -549,16 +557,24 @@ async function generateIntelligentDailyPlan(config: {
     morningEndMinute -= 60
   }
 
-  // L'heure de début est la plus tardive entre :
-  // - Fin de routine matinale
-  // - Heure actuelle (si on génère dans la journée)
-  let currentHour = Math.max(startHour, morningEndHour)
-  let currentMinute = startHour >= morningEndHour ? startMinute : morningEndMinute
+  // Déterminer l'heure de début selon si c'est aujourd'hui ou un jour futur
+  let currentHour: number
+  let currentMinute: number
 
-  // Si on est actuellement dans les heures de travail salarié, commencer après
-  if (currentHour < workEndHour && currentHour >= workStartHour) {
-    currentHour = workEndHour
-    currentMinute = 0
+  if (isToday) {
+    // Pour aujourd'hui : prendre le max entre l'heure actuelle et la fin de routine matinale
+    currentHour = Math.max(startHour, morningEndHour)
+    currentMinute = startHour >= morningEndHour ? startMinute : morningEndMinute
+
+    // Si on est actuellement dans les heures de travail salarié, commencer après
+    if (currentHour < workEndHour && currentHour >= workStartHour) {
+      currentHour = workEndHour
+      currentMinute = 0
+    }
+  } else {
+    // Pour les jours futurs : commencer après la routine matinale
+    currentHour = morningEndHour
+    currentMinute = morningEndMinute
   }
 
   // L'heure de fin est la plus tôt entre :
@@ -750,6 +766,7 @@ function addTaskToPlan(params: {
   isTimeSlotBlocked: (hour: number, minute: number, duration: number) => boolean
   workStartHour: number
   workEndHour: number
+  recursionDepth?: number
 }): { currentHour: number, currentMinute: number, currentMinutes: number, lastBreakTime: number, breakCounter: number } | null {
   const {
     task,
@@ -765,8 +782,15 @@ function addTaskToPlan(params: {
     breakCounter,
     isTimeSlotBlocked,
     workStartHour,
-    workEndHour
+    workEndHour,
+    recursionDepth = 0
   } = params
+
+  // Limite de récursion pour éviter les boucles infinies
+  if (recursionDepth > 50) {
+    console.warn(`⚠️ Limite de récursion atteinte pour la tâche: ${task.title}`)
+    return null
+  }
 
   const durationInMinutes = parseDuration(task.estimated_duration)
 
@@ -793,7 +817,8 @@ function addTaskToPlan(params: {
     return addTaskToPlan({
       ...params,
       currentHour: nextHour,
-      currentMinute: nextMinute
+      currentMinute: nextMinute,
+      recursionDepth: recursionDepth + 1
     })
   }
 
@@ -815,7 +840,8 @@ function addTaskToPlan(params: {
     return addTaskToPlan({
       ...params,
       currentHour: nextHour,
-      currentMinute: nextMinute
+      currentMinute: nextMinute,
+      recursionDepth: recursionDepth + 1
     })
   }
 
@@ -1000,8 +1026,9 @@ IMPORTANT:
   }
 }
 
-function parseDuration(duration: string): number {
-  if (!duration) return 30
+function parseDuration(duration: string | null | undefined): number {
+  // Gérer les cas null, undefined ou string vide
+  if (!duration || typeof duration !== 'string') return 30
 
   const lower = duration.toLowerCase()
   const hoursMatch = lower.match(/(\d+)\s*h/)
