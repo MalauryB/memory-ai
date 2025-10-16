@@ -32,6 +32,29 @@ export default function Home() {
     }
   }, [isLoading, isAuthenticated, router])
 
+  // Vérifier si l'utilisateur a complété l'onboarding
+  useEffect(() => {
+    async function checkOnboarding() {
+      if (isAuthenticated) {
+        try {
+          const response = await fetch("/api/profile")
+          if (response.ok) {
+            const { profile } = await response.json()
+
+            // Si le profil n'existe pas ou si onboarding_completed est false/undefined
+            if (!profile || profile.onboarding_completed === false || profile.onboarding_completed === undefined) {
+              router.push("/onboarding")
+            }
+          }
+        } catch (error) {
+          console.error("Erreur vérification onboarding:", error)
+        }
+      }
+    }
+
+    checkOnboarding()
+  }, [isAuthenticated, router])
+
   // ⚡ OPTIMISATION : Prefetch des données critiques pour pré-peupler le cache SWR
   useEffect(() => {
     if (isAuthenticated) {

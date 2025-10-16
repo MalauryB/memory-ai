@@ -7,7 +7,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string; stepId: string }> }
 ) {
   try {
-    const supabase = await createClientFromRequest(request)
+    const supabase = createClientFromRequest(request)
     const { id: projectId, stepId } = await params
 
     // Vérifier l'authentification
@@ -59,7 +59,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string; stepId: string }> }
 ) {
   try {
-    const supabase = await createClientFromRequest(request)
+    const supabase = createClientFromRequest(request)
     const { id: projectId, stepId } = await params
     const { substeps } = await request.json()
 

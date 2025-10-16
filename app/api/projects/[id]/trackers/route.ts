@@ -4,7 +4,7 @@ import { createClientFromRequest } from "@/lib/supabase-server"
 // GET /api/projects/[id]/trackers - Récupérer les trackers d'un projet
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const supabase = await createClientFromRequest(request)
+    const supabase = createClientFromRequest(request)
 
     // Vérifier l'authentification
     const {

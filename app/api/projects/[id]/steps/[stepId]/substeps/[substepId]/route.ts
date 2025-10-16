@@ -7,7 +7,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string; stepId: string; substepId: string }> }
 ) {
   try {
-    const supabase = await createClientFromRequest(request)
+    const supabase = createClientFromRequest(request)
     const { id: projectId, substepId } = await params
     const body = await request.json()
 
@@ -76,7 +76,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; stepId: string; substepId: string }> }
 ) {
   try {
-    const supabase = await createClientFromRequest(request)
+    const supabase = createClientFromRequest(request)
     const { id: projectId, substepId } = await params
 
     // Vérifier l'authentification

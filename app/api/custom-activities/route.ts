@@ -4,7 +4,7 @@ import { createClientFromRequest } from "@/lib/supabase-server"
 // GET - Récupérer toutes les activités personnalisées de l'utilisateur
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClientFromRequest(request)
+    const supabase = createClientFromRequest(request)
 
     const {
       data: { user },
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 // POST - Créer une nouvelle activité personnalisée
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClientFromRequest(request)
+    const supabase = createClientFromRequest(request)
 
     const {
       data: { user },

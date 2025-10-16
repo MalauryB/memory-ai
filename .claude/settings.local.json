@@ -3,7 +3,8 @@
     "allow": [
       "Bash(pnpm install:*)",
       "Bash(npm:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

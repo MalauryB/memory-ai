@@ -55,7 +55,7 @@ interface DailyPlanTask {
 // POST - Générer et sauvegarder un planning avec configuration personnalisée
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClientFromRequest(request)
+    const supabase = createClientFromRequest(request)
 
     const {
       data: { user },
@@ -325,7 +325,7 @@ export async function POST(request: NextRequest) {
 // GET - Récupérer le planning du jour sauvegardé
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClientFromRequest(request)
+    const supabase = createClientFromRequest(request)
 
     const {
       data: { user },

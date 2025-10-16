@@ -3,7 +3,7 @@ import { createClientFromRequest } from "@/lib/supabase-server"
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClientFromRequest(request)
+    const supabase = createClientFromRequest(request)
 
     // Vérifier l'authentification
     const {
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClientFromRequest(request)
+    const supabase = createClientFromRequest(request)
     const body = await request.json()
 
     // Vérifier l'authentification
@@ -98,7 +98,8 @@ export async function POST(request: NextRequest) {
       'daily_work_hours',
       'notification_enabled',
       'notification_time',
-      'location'
+      'location',
+      'onboarding_completed'
     ]
 
     // Vérifier quels champs existent en testant un SELECT sur le profil existant

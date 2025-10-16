@@ -12,7 +12,7 @@ const USE_MOCK = process.env.USE_MOCK_AI === "true"
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClientFromRequest(request)
+    const supabase = createClientFromRequest(request)
 
     // Récupérer l'utilisateur
     const {
