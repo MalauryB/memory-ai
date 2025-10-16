@@ -153,3 +153,54 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
   }
 }
+
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const supabase = createClientFromRequest(request)
+    const { id: projectId } = await params
+
+    // Vérifier l'authentification
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    const TEST_MODE = process.env.TEST_MODE_NO_AUTH === "true"
+
+    if (!user && !TEST_MODE) {
+      return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
+    }
+
+    // Vérifier que le projet appartient à l'utilisateur
+    if (user) {
+      const { data: project } = await supabase
+        .from("projects")
+        .select("user_id")
+        .eq("id", projectId)
+        .single()
+
+      if (!project) {
+        return NextResponse.json({ error: "Projet introuvable" }, { status: 404 })
+      }
+
+      if (project.user_id !== user.id) {
+        return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
+      }
+    }
+
+    // Supprimer le projet (les suppressions en cascade devraient gérer les étapes, sous-étapes, etc.)
+    const { error: deleteError } = await supabase
+      .from("projects")
+      .delete()
+      .eq("id", projectId)
+
+    if (deleteError) {
+      console.error("Erreur lors de la suppression du projet:", deleteError)
+      return NextResponse.json({ error: "Erreur lors de la suppression" }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error("Erreur:", error)
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
+  }
+}
