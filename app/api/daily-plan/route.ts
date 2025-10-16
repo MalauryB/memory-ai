@@ -2,6 +2,22 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClientFromRequest } from "@/lib/supabase-server"
 import { getUserContext, formatUserContextForAI, getUserRecommendations } from "@/lib/user-context"
 
+// ⚡ OPTIMISATION : Cache en mémoire pour les plannings générés
+const planCache = new Map<string, { data: any; timestamp: number }>()
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
+// Nettoyer le cache périodiquement
+if (typeof setInterval !== 'undefined') {
+  setInterval(() => {
+    const now = Date.now()
+    for (const [key, value] of planCache.entries()) {
+      if (now - value.timestamp > CACHE_TTL) {
+        planCache.delete(key)
+      }
+    }
+  }, 60000) // Nettoyer toutes les minutes
+}
+
 interface PlanningConfig {
   intensity: 'light' | 'moderate' | 'intense'
   style: 'mixed' | 'thematic_blocks'
@@ -84,6 +100,17 @@ export async function POST(request: NextRequest) {
     const todayDayOfWeek = new Date(today).getDay()
 
     console.log(`📅 Génération planning pour: ${today}${isToday ? ' (aujourd\'hui)' : ' (jour futur)'}`)
+
+    // ⚡ OPTIMISATION : Vérifier le cache en premier
+    if (!forceRegenerate) {
+      const cacheKey = `${user?.id || 'anon'}-${today}-${intensity}-${style}-${selectedActivities.sort().join(',')}`
+      const cached = planCache.get(cacheKey)
+
+      if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        console.log(`✨ Cache HIT pour ${cacheKey}`)
+        return NextResponse.json({ ...cached.data, fromCache: true })
+      }
+    }
 
     // ⚡ OPTIMISATION : Paralléliser toutes les requêtes en une seule fois
     const [
@@ -305,7 +332,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
+    const response = {
       tasks: dailyPlan,
       availableHours: dailyWorkHours,
       workHoursStart,
@@ -315,7 +342,14 @@ export async function POST(request: NextRequest) {
         style
       },
       saved: true
-    })
+    }
+
+    // ⚡ OPTIMISATION : Stocker dans le cache
+    const cacheKey = `${user?.id || 'anon'}-${today}-${intensity}-${style}-${selectedActivities.sort().join(',')}`
+    planCache.set(cacheKey, { data: response, timestamp: Date.now() })
+    console.log(`💾 Cache STORE pour ${cacheKey}`)
+
+    return NextResponse.json(response)
   } catch (error) {
     console.error("Erreur:", error)
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })

@@ -1,6 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
+import { memo, useMemo, useCallback } from "react"
 import useSWR from "swr"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -29,7 +30,8 @@ interface Project {
   project_steps: ProjectStep[]
 }
 
-export function ProjectsList() {
+// ⚡ OPTIMISATION : Memo pour éviter re-renders inutiles
+export const ProjectsList = memo(function ProjectsList() {
   const router = useRouter()
 
   // ⚡ OPTIMISATION : Utiliser SWR pour le cache automatique
@@ -42,7 +44,8 @@ export function ProjectsList() {
 
   const projects = data?.projects || []
 
-  const formatDeadline = (deadline: string | null) => {
+  // ⚡ OPTIMISATION : Memoizer la fonction de formatage
+  const formatDeadline = useCallback((deadline: string | null) => {
     if (!deadline) return null
 
     const date = new Date(deadline)
@@ -65,7 +68,7 @@ export function ProjectsList() {
       const years = Math.floor(diffDays / 365)
       return `${years} an${years > 1 ? "s" : ""} restant${years > 1 ? "s" : ""}`
     }
-  }
+  }, [])
 
   if (isLoading) {
     return (
@@ -163,4 +166,4 @@ export function ProjectsList() {
       </div>
     </div>
   )
-}
+})

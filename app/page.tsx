@@ -1,19 +1,22 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, lazy, Suspense } from "react"
 import { useRouter } from "next/navigation"
 import { mutate } from "swr"
+import useSWR from "swr"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Calendar, LogOut, FolderKanban, ListTodo, User, Activity, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react"
-import { DailyPlanner } from "@/components/daily-planner"
-import { ProjectsList } from "@/components/projects-list"
-import { TrackersView } from "@/components/trackers-view"
-import { AgendaView } from "@/components/agenda-view"
-import { CalendarView } from "@/components/calendar-view"
+import { Calendar, LogOut, FolderKanban, ListTodo, User, Activity, CalendarDays, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { signOut } from "@/lib/auth"
 import { useAuth } from "@/hooks/use-auth"
+
+// ⚡ OPTIMISATION : Lazy loading des composants de vue
+const DailyPlanner = lazy(() => import("@/components/daily-planner").then(m => ({ default: m.DailyPlanner })))
+const ProjectsList = lazy(() => import("@/components/projects-list").then(m => ({ default: m.ProjectsList })))
+const TrackersView = lazy(() => import("@/components/trackers-view").then(m => ({ default: m.TrackersView })))
+const AgendaView = lazy(() => import("@/components/agenda-view").then(m => ({ default: m.AgendaView })))
+const CalendarView = lazy(() => import("@/components/calendar-view").then(m => ({ default: m.CalendarView })))
 
 type View = "goals" | "planner" | "trackers" | "agenda" | "calendar"
 
@@ -32,28 +35,24 @@ export default function Home() {
     }
   }, [isLoading, isAuthenticated, router])
 
-  // Vérifier si l'utilisateur a complété l'onboarding
-  useEffect(() => {
-    async function checkOnboarding() {
-      if (isAuthenticated) {
-        try {
-          const response = await fetch("/api/profile")
-          if (response.ok) {
-            const { profile } = await response.json()
-
-            // Si le profil n'existe pas ou si onboarding_completed est false/undefined
-            if (!profile || profile.onboarding_completed === false || profile.onboarding_completed === undefined) {
-              router.push("/onboarding")
-            }
-          }
-        } catch (error) {
-          console.error("Erreur vérification onboarding:", error)
-        }
-      }
+  // ⚡ OPTIMISATION : Utiliser SWR pour la vérification onboarding (cache + moins d'appels)
+  const { data: profileData } = useSWR(
+    isAuthenticated ? "/api/profile" : null,
+    {
+      dedupingInterval: 3600000, // Cache 1 heure
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
     }
+  )
 
-    checkOnboarding()
-  }, [isAuthenticated, router])
+  // Rediriger si onboarding non complété
+  useEffect(() => {
+    if (profileData?.profile &&
+        (profileData.profile.onboarding_completed === false ||
+         profileData.profile.onboarding_completed === undefined)) {
+      router.push("/onboarding")
+    }
+  }, [profileData, router])
 
   // ⚡ OPTIMISATION : Prefetch des données critiques pour pré-peupler le cache SWR
   useEffect(() => {
@@ -172,11 +171,17 @@ export default function Home() {
 
         {/* Contenu */}
         <main className="flex-1 px-6 py-12 overflow-y-auto">
-          {currentView === "goals" && <ProjectsList />}
-          {currentView === "planner" && <DailyPlanner />}
-          {currentView === "trackers" && <TrackersView />}
-          {currentView === "agenda" && <AgendaView />}
-          {currentView === "calendar" && <CalendarView />}
+          <Suspense fallback={
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          }>
+            {currentView === "goals" && <ProjectsList />}
+            {currentView === "planner" && <DailyPlanner />}
+            {currentView === "trackers" && <TrackersView />}
+            {currentView === "agenda" && <AgendaView />}
+            {currentView === "calendar" && <CalendarView />}
+          </Suspense>
         </main>
       </div>
     </div>

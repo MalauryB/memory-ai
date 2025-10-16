@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, memo, useCallback } from "react"
 import useSWR, { mutate } from "swr"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -32,7 +32,8 @@ interface DailyTask {
   canBeCombined?: boolean
 }
 
-export function DailyPlanner() {
+// ⚡ OPTIMISATION : Memo pour éviter re-renders inutiles
+export const DailyPlanner = memo(function DailyPlanner() {
   const [generating, setGenerating] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState(new Date())
@@ -54,37 +55,50 @@ export function DailyPlanner() {
   const availableHours = data?.availableHours || 8
   const hasPlanning = !data?.needsGeneration && tasks.length > 0
 
-  // Mettre à jour l'heure actuelle toutes les minutes
+  // ⚡ OPTIMISATION : Timer intelligent - démarrer à la prochaine minute exacte
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date())
-    }, 60000) // 60000ms = 1 minute
+    const now = new Date()
+    const secondsUntilNextMinute = 60 - now.getSeconds()
+    const msUntilNextMinute = secondsUntilNextMinute * 1000 - now.getMilliseconds()
 
-    return () => clearInterval(timer)
+    // Attendre jusqu'à la prochaine minute
+    const timeout = setTimeout(() => {
+      setCurrentTime(new Date())
+
+      // Puis mettre à jour toutes les minutes
+      const interval = setInterval(() => {
+        setCurrentTime(new Date())
+      }, 60000)
+
+      return () => clearInterval(interval)
+    }, msUntilNextMinute)
+
+    return () => clearTimeout(timeout)
   }, [])
 
-  function changeDate(days: number) {
+  // ⚡ OPTIMISATION : Memoizer les fonctions de callback
+  const changeDate = useCallback((days: number) => {
     const newDate = new Date(selectedDate)
     newDate.setDate(newDate.getDate() + days)
     setSelectedDate(newDate)
-  }
+  }, [selectedDate])
 
-  function isToday(date: Date): boolean {
+  const isToday = useCallback((date: Date): boolean => {
     const today = new Date()
     return date.toDateString() === today.toDateString()
-  }
+  }, [])
 
-  function isTomorrow(date: Date): boolean {
+  const isTomorrow = useCallback((date: Date): boolean => {
     const tomorrow = new Date()
     tomorrow.setDate(tomorrow.getDate() + 1)
     return date.toDateString() === tomorrow.toDateString()
-  }
+  }, [])
 
-  function getDateLabel(): string {
+  const getDateLabel = useCallback((): string => {
     if (isToday(selectedDate)) return "Aujourd'hui"
     if (isTomorrow(selectedDate)) return "Demain"
     return selectedDate.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })
-  }
+  }, [selectedDate, isToday, isTomorrow])
 
   async function toggleTaskCompletion(taskId: string) {
     const task = tasks.find(t => t.id === taskId)
@@ -395,4 +409,4 @@ export function DailyPlanner() {
       )}
     </div>
   )
-}
+})
