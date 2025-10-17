@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Languages } from 'lucide-react';
+import { Globe } from 'lucide-react';
 import { locales, type Locale } from '@/i18n/request';
 
 const languageNames: Record<Locale, string> = {
@@ -27,6 +27,15 @@ const languageFlags: Record<Locale, string> = {
   de: '🇩🇪',
   it: '🇮🇹',
   pt: '🇵🇹',
+};
+
+const languageCodes: Record<Locale, string> = {
+  fr: 'FR',
+  en: 'EN',
+  es: 'ES',
+  de: 'DE',
+  it: 'IT',
+  pt: 'PT',
 };
 
 export function LanguageSwitcher() {
@@ -49,7 +58,7 @@ export function LanguageSwitcher() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="rounded-full">
-          <Languages className="h-5 w-5" />
+          <Globe className="h-5 w-5" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
@@ -63,6 +72,9 @@ export function LanguageSwitcher() {
             <span className={currentLocale === locale ? 'font-bold' : ''}>
               {languageNames[locale]}
             </span>
+            {currentLocale === locale && (
+              <span className="ml-auto text-xs opacity-50">✓</span>
+            )}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
