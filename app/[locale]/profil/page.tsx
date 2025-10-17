@@ -12,6 +12,7 @@ import { ArrowLeft, Loader2, Save, User, MapPin, Clock, Bell, Calendar, Plus, Tr
 import { getUser } from "@/lib/auth"
 import { useToast } from "@/hooks/use-toast"
 import { useTranslations } from "next-intl"
+import { PremiumBadge } from "@/components/premium-badge"
 
 interface UserProfile {
   user_id?: string
@@ -34,6 +35,7 @@ interface UserProfile {
   daily_work_hours: number
   notification_enabled: boolean
   notification_time: string
+  account_type?: string
 }
 
 
@@ -145,6 +147,7 @@ export default function ProfilePage() {
           night_routine_duration: data.profile.night_routine_duration || 30,
           daily_work_hours: data.profile.daily_work_hours || 8,
           notification_enabled: data.profile.notification_enabled !== undefined ? data.profile.notification_enabled : true,
+          account_type: data.profile.account_type || "standard",
         }
         setProfile(profileData)
       }
@@ -354,7 +357,10 @@ export default function ProfilePage() {
       <main className="flex-1 container mx-auto px-6 py-12">
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="space-y-2">
-            <h1 className="text-4xl font-light tracking-tight">{t("title")}</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-4xl font-light tracking-tight">{t("title")}</h1>
+              <PremiumBadge accountType={profile.account_type || 'standard'} />
+            </div>
             <p className="text-muted-foreground font-light">
               {t("subtitle")}
             </p>

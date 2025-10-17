@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
 import { ChevronLeft, ChevronRight, Plus, Trash2, Sparkles, Loader2, Pencil, Check, X, Image as ImageIcon, Upload } from "lucide-react"
 import { supabase } from "@/lib/supabase"
+import { UpgradeModal } from "@/components/upgrade-modal"
 
 interface ProjectStep {
   id: string
@@ -53,6 +54,7 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
   })
 
   const [isGenerating, setIsGenerating] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [editingStepId, setEditingStepId] = useState<string | null>(null)
   const [editingStepData, setEditingStepData] = useState<Omit<ProjectStep, "id">>({
     title: "",
@@ -211,6 +213,15 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
         }),
       })
 
+      if (response.status === 403) {
+        // Limite de génération IA atteinte
+        const data = await response.json()
+        if (data.limit_reached) {
+          setShowUpgradeModal(true)
+          return
+        }
+      }
+
       if (!response.ok) {
         throw new Error("Erreur lors de la génération")
       }
@@ -232,6 +243,22 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
       alert("Erreur lors de la génération des étapes. Veuillez réessayer.")
     } finally {
       setIsGenerating(false)
+    }
+  }
+
+  const handleUpgrade = async () => {
+    try {
+      const response = await fetch('/api/account/upgrade', {
+        method: 'POST'
+      })
+      const data = await response.json()
+
+      if (data.success) {
+        setShowUpgradeModal(false)
+        alert('Félicitations ! Vous êtes maintenant Premium ✨')
+      }
+    } catch (error) {
+      console.error('Error upgrading:', error)
     }
   }
 
@@ -646,6 +673,12 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
           </Button>
         )}
       </div>
+
+      <UpgradeModal
+        open={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        onUpgrade={handleUpgrade}
+      />
     </div>
   )
 }

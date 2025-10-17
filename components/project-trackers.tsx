@@ -8,6 +8,7 @@ import { TrackerCard } from "@/components/tracker-card"
 import { CreateTrackerDialog } from "@/components/create-tracker-dialog"
 import { Tracker } from "@/types/tracker"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { UpgradeModal } from "@/components/upgrade-modal"
 
 interface ProjectTrackersProps {
   projectId: string
@@ -20,6 +21,7 @@ export function ProjectTrackers({ projectId, projectTitle, projectCategory }: Pr
   const [completedToday, setCompletedToday] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   useEffect(() => {
     fetchProjectTrackers()
@@ -69,6 +71,12 @@ export function ProjectTrackers({ projectId, projectTitle, projectCategory }: Pr
       if (response.ok) {
         // Rafraîchir la liste des trackers
         await fetchProjectTrackers()
+      } else if (response.status === 403) {
+        // Limite de génération IA atteinte
+        const data = await response.json()
+        if (data.limit_reached) {
+          setShowUpgradeModal(true)
+        }
       } else {
         console.error("Erreur lors de la génération des trackers")
       }
@@ -76,6 +84,22 @@ export function ProjectTrackers({ projectId, projectTitle, projectCategory }: Pr
       console.error("Erreur:", error)
     } finally {
       setGenerating(false)
+    }
+  }
+
+  async function handleUpgrade() {
+    try {
+      const response = await fetch('/api/account/upgrade', {
+        method: 'POST'
+      })
+      const data = await response.json()
+
+      if (data.success) {
+        setShowUpgradeModal(false)
+        alert('Félicitations ! Vous êtes maintenant Premium ✨')
+      }
+    } catch (error) {
+      console.error('Error upgrading:', error)
     }
   }
 
@@ -199,6 +223,12 @@ export function ProjectTrackers({ projectId, projectTitle, projectCategory }: Pr
           </div>
         </>
       )}
+
+      <UpgradeModal
+        open={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        onUpgrade={handleUpgrade}
+      />
     </Card>
   )
 }

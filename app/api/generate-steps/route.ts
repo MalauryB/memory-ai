@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk"
 import { NextRequest, NextResponse } from "next/server"
 import { createClientFromRequest } from "@/lib/supabase-server"
 import { getUserContext, formatUserContextForAI, getUserRecommendations } from "@/lib/user-context"
+import { trackAIGeneration } from "@/lib/ai-tracking"
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -150,6 +151,25 @@ Réponds UNIQUEMENT avec un JSON valide suivant ce format exact (sans markdown, 
 }
 
 Génère entre 4 et 8 étapes selon la complexité du projet. Assure-toi que les étapes suivent un ordre logique et progressif.`
+
+    // 🔥 TRACKING IA : Incrémenter le compteur AVANT la génération (seulement si utilisateur connecté)
+    if (user) {
+      const trackingResult = await trackAIGeneration(request, user.id)
+
+      if (!trackingResult.success && trackingResult.limit_reached) {
+        console.log("❌ Limite de génération IA atteinte pour l'utilisateur:", user.id)
+        return NextResponse.json({
+          error: 'Limite atteinte',
+          message: trackingResult.message,
+          limit_reached: true,
+          generation_count: trackingResult.generation_count,
+          limit: trackingResult.limit,
+          account_type: trackingResult.account_type,
+        }, { status: 403 })
+      }
+
+      console.log("✅ Génération IA trackée:", trackingResult)
+    }
 
     const message = await anthropic.messages.create({
       model: "claude-3-5-sonnet-20241022",

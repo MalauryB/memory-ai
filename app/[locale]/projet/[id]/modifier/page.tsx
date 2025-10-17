@@ -34,6 +34,7 @@ import {
   Sparkles,
 } from "lucide-react"
 import { getUser } from "@/lib/auth"
+import { UpgradeModal } from "@/components/upgrade-modal"
 
 interface ProjectStep {
   id: string
@@ -64,6 +65,7 @@ export default function EditProjectPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [generating, setGenerating] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [editingStepId, setEditingStepId] = useState<string | null>(null)
   const [editingStepData, setEditingStepData] = useState({
@@ -190,6 +192,15 @@ export default function EditProjectPage() {
         }),
       })
 
+      if (response.status === 403) {
+        // Limite de génération IA atteinte
+        const data = await response.json()
+        if (data.limit_reached) {
+          setShowUpgradeModal(true)
+          return
+        }
+      }
+
       if (!response.ok) {
         throw new Error("Erreur lors de la génération")
       }
@@ -215,6 +226,22 @@ export default function EditProjectPage() {
       alert("Erreur lors de la génération des étapes. Veuillez réessayer.")
     } finally {
       setGenerating(false)
+    }
+  }
+
+  const handleUpgrade = async () => {
+    try {
+      const response = await fetch('/api/account/upgrade', {
+        method: 'POST'
+      })
+      const data = await response.json()
+
+      if (data.success) {
+        setShowUpgradeModal(false)
+        alert('Félicitations ! Vous êtes maintenant Premium ✨')
+      }
+    } catch (error) {
+      console.error('Error upgrading:', error)
     }
   }
 
@@ -597,6 +624,12 @@ export default function EditProjectPage() {
           </div>
         </div>
       </main>
+
+      <UpgradeModal
+        open={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        onUpgrade={handleUpgrade}
+      />
     </div>
   )
 }

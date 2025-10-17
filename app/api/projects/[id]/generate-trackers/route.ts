@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClientFromRequest } from "@/lib/supabase-server"
 import { getUserContext, formatUserContextForAI, getUserRecommendations } from "@/lib/user-context"
+import { trackAIGeneration } from "@/lib/ai-tracking"
 
 // POST /api/projects/[id]/generate-trackers - Générer des trackers à partir d'un projet
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -61,6 +62,23 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     if (anthropicApiKey) {
       console.log("🤖 Utilisation de Claude AI pour générer des trackers intelligents...")
+
+      // 🔥 TRACKING IA : Incrémenter le compteur AVANT la génération
+      const trackingResult = await trackAIGeneration(request, user.id)
+
+      if (!trackingResult.success && trackingResult.limit_reached) {
+        console.log("❌ Limite de génération IA atteinte pour l'utilisateur:", user.id)
+        return NextResponse.json({
+          error: 'Limite atteinte',
+          message: trackingResult.message,
+          limit_reached: true,
+          generation_count: trackingResult.generation_count,
+          limit: trackingResult.limit,
+          account_type: trackingResult.account_type,
+        }, { status: 403 })
+      }
+
+      console.log("✅ Génération IA trackée:", trackingResult)
 
       try {
         // Récupérer le contexte utilisateur

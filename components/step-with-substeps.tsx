@@ -25,6 +25,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { UpgradeModal } from "@/components/upgrade-modal"
 
 interface ProjectSubstep {
   id: string
@@ -68,6 +69,7 @@ export function StepWithSubsteps({
   const [substeps, setSubsteps] = useState<ProjectSubstep[]>([])
   const [loadingSubsteps, setLoadingSubsteps] = useState(false)
   const [generatingSubsteps, setGeneratingSubsteps] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [updatingSubstep, setUpdatingSubstep] = useState<string | null>(null)
   const [updatingStep, setUpdatingStep] = useState(false)
   const [editingSubstep, setEditingSubstep] = useState<ProjectSubstep | null>(null)
@@ -122,6 +124,15 @@ export function StepWithSubsteps({
         }),
       })
 
+      if (genResponse.status === 403) {
+        // Limite de génération IA atteinte
+        const data = await genResponse.json()
+        if (data.limit_reached) {
+          setShowUpgradeModal(true)
+          return
+        }
+      }
+
       if (genResponse.ok) {
         const { substeps: generatedSubsteps } = await genResponse.json()
 
@@ -145,6 +156,22 @@ export function StepWithSubsteps({
       console.error("Erreur:", error)
     } finally {
       setGeneratingSubsteps(false)
+    }
+  }
+
+  async function handleUpgrade() {
+    try {
+      const response = await fetch('/api/account/upgrade', {
+        method: 'POST'
+      })
+      const data = await response.json()
+
+      if (data.success) {
+        setShowUpgradeModal(false)
+        alert('Félicitations ! Vous êtes maintenant Premium ✨')
+      }
+    } catch (error) {
+      console.error('Error upgrading:', error)
     }
   }
 
@@ -290,6 +317,7 @@ export function StepWithSubsteps({
   const totalSubsteps = substeps.length
 
   return (
+    <>
     <Card
       className={`border-border/50 backdrop-blur-sm transition-all ${
         step.status === "completed"
@@ -630,5 +658,12 @@ export function StepWithSubsteps({
         </DialogContent>
       </Dialog>
     </Card>
+
+    <UpgradeModal
+      open={showUpgradeModal}
+      onClose={() => setShowUpgradeModal(false)}
+      onUpgrade={handleUpgrade}
+    />
+  </>
   )
 }
