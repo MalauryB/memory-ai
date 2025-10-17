@@ -4,10 +4,12 @@ import { useState, useEffect, lazy, Suspense } from "react"
 import { useRouter } from "next/navigation"
 import { mutate } from "swr"
 import useSWR from "swr"
+import { useTranslations } from 'next-intl'
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Calendar, LogOut, FolderKanban, ListTodo, User, Activity, CalendarDays, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { LanguageSwitcher } from "@/components/language-switcher"
 import { signOut } from "@/lib/auth"
 import { useAuth } from "@/hooks/use-auth"
 
@@ -21,6 +23,7 @@ const CalendarView = lazy(() => import("@/components/calendar-view").then(m => (
 type View = "goals" | "planner" | "trackers" | "agenda" | "calendar"
 
 export default function Home() {
+  const t = useTranslations('nav')
   const [currentView, setCurrentView] = useState<View>("goals")
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const router = useRouter()
@@ -108,46 +111,46 @@ export default function Home() {
             variant={currentView === "planner" ? "secondary" : "ghost"}
             className={`w-full justify-start font-normal ${currentView === "planner" ? "bg-accent/10 text-accent" : ""}`}
             onClick={() => setCurrentView("planner")}
-            title={sidebarCollapsed ? "Planning journalier" : ""}
+            title={sidebarCollapsed ? t('dailyPlanner') : ""}
           >
             <Calendar className={`h-5 w-5 ${sidebarCollapsed ? "" : "mr-3"}`} />
-            {!sidebarCollapsed && "Planning journalier"}
+            {!sidebarCollapsed && t('dailyPlanner')}
           </Button>
           <Button
             variant={currentView === "trackers" ? "secondary" : "ghost"}
             className={`w-full justify-start font-normal ${currentView === "trackers" ? "bg-accent/10 text-accent" : ""}`}
             onClick={() => setCurrentView("trackers")}
-            title={sidebarCollapsed ? "Mes trackers" : ""}
+            title={sidebarCollapsed ? t('myTrackers') : ""}
           >
             <Activity className={`h-5 w-5 ${sidebarCollapsed ? "" : "mr-3"}`} />
-            {!sidebarCollapsed && "Mes trackers"}
+            {!sidebarCollapsed && t('myTrackers')}
           </Button>
           <Button
             variant={currentView === "calendar" ? "secondary" : "ghost"}
             className={`w-full justify-start font-normal ${currentView === "calendar" ? "bg-accent/10 text-accent" : ""}`}
             onClick={() => setCurrentView("calendar")}
-            title={sidebarCollapsed ? "Calendrier" : ""}
+            title={sidebarCollapsed ? t('calendar') : ""}
           >
             <CalendarDays className={`h-5 w-5 ${sidebarCollapsed ? "" : "mr-3"}`} />
-            {!sidebarCollapsed && "Calendrier"}
+            {!sidebarCollapsed && t('calendar')}
           </Button>
           <Button
             variant={currentView === "goals" ? "secondary" : "ghost"}
             className={`w-full justify-start font-normal ${currentView === "goals" ? "bg-accent/10 text-accent" : ""}`}
             onClick={() => setCurrentView("goals")}
-            title={sidebarCollapsed ? "Mes projets" : ""}
+            title={sidebarCollapsed ? t('myProjects') : ""}
           >
             <FolderKanban className={`h-5 w-5 ${sidebarCollapsed ? "" : "mr-3"}`} />
-            {!sidebarCollapsed && "Mes projets"}
+            {!sidebarCollapsed && t('myProjects')}
           </Button>
           <Button
             variant={currentView === "agenda" ? "secondary" : "ghost"}
             className={`w-full justify-start font-normal ${currentView === "agenda" ? "bg-accent/10 text-accent" : ""}`}
             onClick={() => setCurrentView("agenda")}
-            title={sidebarCollapsed ? "Prochaines étapes" : ""}
+            title={sidebarCollapsed ? t('nextSteps') : ""}
           >
             <ListTodo className={`h-5 w-5 ${sidebarCollapsed ? "" : "mr-3"}`} />
-            {!sidebarCollapsed && "Prochaines étapes"}
+            {!sidebarCollapsed && t('nextSteps')}
           </Button>
         </nav>
       </aside>
@@ -158,6 +161,7 @@ export default function Home() {
         <header className="border-b border-border backdrop-blur-sm sticky top-0 z-50 bg-background/80">
           <div className="px-6 py-4 flex items-center justify-end">
             <div className="flex items-center gap-2">
+              <LanguageSwitcher />
               <ThemeToggle />
               <Button variant="ghost" size="icon" className="rounded-full" onClick={() => router.push("/profil")}>
                 <User className="h-5 w-5" />

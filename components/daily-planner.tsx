@@ -2,6 +2,7 @@
 
 import { useState, useEffect, memo, useCallback } from "react"
 import useSWR, { mutate } from "swr"
+import { useTranslations } from "next-intl"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -34,6 +35,8 @@ interface DailyTask {
 
 // ⚡ OPTIMISATION : Memo pour éviter re-renders inutiles
 export const DailyPlanner = memo(function DailyPlanner() {
+  const t = useTranslations('planner')
+  const tCommon = useTranslations('common')
   const [generating, setGenerating] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState(new Date())
@@ -95,10 +98,10 @@ export const DailyPlanner = memo(function DailyPlanner() {
   }, [])
 
   const getDateLabel = useCallback((): string => {
-    if (isToday(selectedDate)) return "Aujourd'hui"
-    if (isTomorrow(selectedDate)) return "Demain"
+    if (isToday(selectedDate)) return t('today')
+    if (isTomorrow(selectedDate)) return t('tomorrow')
     return selectedDate.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })
-  }, [selectedDate, isToday, isTomorrow])
+  }, [selectedDate, isToday, isTomorrow, t])
 
   async function toggleTaskCompletion(taskId: string) {
     const task = tasks.find(t => t.id === taskId)
@@ -202,7 +205,7 @@ export const DailyPlanner = memo(function DailyPlanner() {
     return (
       <div className="space-y-12 max-w-4xl mx-auto">
         <div className="space-y-4">
-          <h2 className="text-4xl font-semibold tracking-tight text-balance">Planning du jour</h2>
+          <h2 className="text-4xl font-semibold tracking-tight text-balance">{t('title')}</h2>
         </div>
         <div className="flex items-center justify-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -216,7 +219,7 @@ export const DailyPlanner = memo(function DailyPlanner() {
       <div className="space-y-2">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
-            <h2 className="text-2xl font-semibold tracking-tight text-balance">Planning du jour</h2>
+            <h2 className="text-2xl font-semibold tracking-tight text-balance">{t('title')}</h2>
 
             {/* Sélecteur de date */}
             <div className="flex items-center gap-2 mt-2">
@@ -252,7 +255,7 @@ export const DailyPlanner = memo(function DailyPlanner() {
                   onClick={() => setSelectedDate(new Date())}
                   className="h-8 text-xs"
                 >
-                  Aujourd'hui
+                  {t('today')}
                 </Button>
               )}
             </div>
@@ -264,7 +267,7 @@ export const DailyPlanner = memo(function DailyPlanner() {
 
         {tasks.length > 0 && (
           <p className="text-xs text-muted-foreground font-medium">
-            {tasks.filter(t => t.completed).length} / {tasks.length} tâches terminées
+            {t('tasksCompleted', { completed: tasks.filter(t => t.completed).length, total: tasks.length })}
           </p>
         )}
       </div>
@@ -276,9 +279,9 @@ export const DailyPlanner = memo(function DailyPlanner() {
               <Loader2 className="h-12 w-12 animate-spin text-accent" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-lg font-medium">Génération de votre planning...</h3>
+              <h3 className="text-lg font-medium">{t('generating')}</h3>
               <p className="text-xs text-muted-foreground font-normal max-w-md mx-auto">
-                Analyse de vos projets, trackers et préférences en cours
+                {t('generatingDesc')}
               </p>
             </div>
           </div>
@@ -290,9 +293,9 @@ export const DailyPlanner = memo(function DailyPlanner() {
               <Sparkles className="h-12 w-12 text-accent" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-lg font-medium">Prêt à planifier votre journée ?</h3>
+              <h3 className="text-lg font-medium">{t('readyToGenerate')}</h3>
               <p className="text-xs text-muted-foreground font-normal max-w-md mx-auto">
-                Générez un planning intelligent adapté à vos projets et votre niveau d'énergie.
+                {t('readyToGenerateDesc')}
               </p>
             </div>
             <PlanningConfigurator onGenerate={generateWithConfig} loading={generating} />
@@ -343,7 +346,7 @@ export const DailyPlanner = memo(function DailyPlanner() {
                           {isSuggestion && (
                             <Badge variant="secondary" className="font-normal text-[10px] py-0 h-4">
                               <Lightbulb className="h-2.5 w-2.5 mr-0.5" />
-                              Suggestion IA
+                              {t('suggestionAI')}
                             </Badge>
                           )}
                         </div>
@@ -383,12 +386,12 @@ export const DailyPlanner = memo(function DailyPlanner() {
                       )}
                       {task.itemType === 'tracker' && (
                         <Badge variant="outline" className="font-normal text-[10px] py-0 h-4">
-                          Habitude
+                          {t('habit')}
                         </Badge>
                       )}
                       {isCustomActivity && (
                         <Badge variant="outline" className="font-normal text-[10px] py-0 h-4 border-accent/30 text-accent">
-                          Activité perso
+                          {t('customActivity')}
                         </Badge>
                       )}
                     </div>
@@ -398,7 +401,7 @@ export const DailyPlanner = memo(function DailyPlanner() {
                 <button
                   onClick={() => deleteTask(task.id)}
                   className="absolute top-2 right-2 p-1 rounded-md bg-background/80 backdrop-blur-sm border border-border opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive hover:text-destructive-foreground hover:border-destructive"
-                  title="Retirer cette tâche du planning"
+                  title={t('removeTask')}
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>

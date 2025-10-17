@@ -2,12 +2,15 @@
 
 import { useState } from "react"
 import useSWR from "swr"
+import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Plus, Loader2, Activity } from "lucide-react"
 import { TrackerCard } from "@/components/tracker-card"
 import { Tracker } from "@/types/tracker"
 
 export function TrackersView() {
+  const t = useTranslations('trackers')
+  const tCommon = useTranslations('common')
   // ⚡ OPTIMISATION : Une seule requête avec SWR
   const { data, error, isLoading, mutate: refreshTrackers } = useSWR("/api/trackers", {
     refreshInterval: 30000, // Revalider toutes les 30 secondes
@@ -86,14 +89,14 @@ export function TrackersView() {
           <Activity className="h-8 w-8 text-accent" />
         </div>
         <div className="space-y-3">
-          <h3 className="text-2xl font-medium tracking-tight">Aucun tracker pour le moment</h3>
+          <h3 className="text-2xl font-medium tracking-tight">{t('noTrackers')}</h3>
           <p className="text-muted-foreground font-normal">
-            Créez votre premier tracker pour suivre vos habitudes et objectifs récurrents.
+            {t('noTrackersDesc')}
           </p>
         </div>
         <Button onClick={handleCreateTracker} className="font-normal">
           <Plus className="h-4 w-4 mr-2" />
-          Créer un tracker
+          {t('createTracker')}
         </Button>
       </div>
     )
@@ -109,31 +112,31 @@ export function TrackersView() {
       {/* En-tête */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h2 className="text-3xl font-semibold tracking-tight">Mes trackers</h2>
+          <h2 className="text-3xl font-semibold tracking-tight">{t('title')}</h2>
           <p className="text-muted-foreground font-normal">
-            {totalActiveTrackers} tracker{totalActiveTrackers > 1 ? "s" : ""} actif{totalActiveTrackers > 1 ? "s" : ""}
+            {t('subtitle', { count: totalActiveTrackers })}
           </p>
         </div>
         <Button onClick={handleCreateTracker} className="font-normal">
           <Plus className="h-4 w-4 mr-2" />
-          Nouveau tracker
+          {t('newTracker')}
         </Button>
       </div>
 
       {/* Statistiques du jour */}
       <div className="flex items-center gap-6 text-sm">
         <div className="flex items-center gap-2">
-          <span className="text-muted-foreground font-normal">Complétés aujourd'hui:</span>
+          <span className="text-muted-foreground font-normal">{t('completedToday')}:</span>
           <span className="font-medium">
             {totalCompletionsToday}/{totalActiveTrackers}
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-muted-foreground font-normal">Taux de complétion:</span>
+          <span className="text-muted-foreground font-normal">{t('completionRate')}:</span>
           <span className="font-medium">{completionRate}%</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-muted-foreground font-normal">Meilleure série:</span>
+          <span className="text-muted-foreground font-normal">{t('bestStreak')}:</span>
           <span className="font-medium">{Math.max(...activeTrackers.map((t) => t.best_streak), 0)}</span>
         </div>
       </div>
@@ -141,7 +144,7 @@ export function TrackersView() {
       {/* Liste des trackers à faire aujourd'hui */}
       {todayTrackers.length > 0 && (
         <section className="space-y-3">
-          <h3 className="text-lg font-medium tracking-tight">À faire aujourd'hui</h3>
+          <h3 className="text-lg font-medium tracking-tight">{t('todoToday')}</h3>
           <div className="space-y-2">
             {todayTrackers.map((tracker) => (
               <TrackerCard
@@ -159,7 +162,7 @@ export function TrackersView() {
       {/* Liste des trackers complétés aujourd'hui */}
       {completedTrackers.length > 0 && (
         <section className="space-y-3">
-          <h3 className="text-lg font-medium tracking-tight text-muted-foreground">Complétés aujourd'hui</h3>
+          <h3 className="text-lg font-medium tracking-tight text-muted-foreground">{t('completedList')}</h3>
           <div className="space-y-2">
             {completedTrackers.map((tracker) => (
               <TrackerCard

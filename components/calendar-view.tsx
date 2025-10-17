@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { Card } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
@@ -46,6 +47,8 @@ interface CalendarEvent {
 
 export function CalendarView() {
   const router = useRouter()
+  const t = useTranslations('calendar')
+  const tCommon = useTranslations('common')
   const [projects, setProjects] = useState<Project[]>([])
   const [trackers, setTrackers] = useState<Tracker[]>([])
   const [loading, setLoading] = useState(true)
@@ -347,7 +350,7 @@ export function CalendarView() {
               className="font-normal h-7 text-xs px-2"
             >
               <CalendarClock className="h-3 w-3 mr-1" />
-              Jour
+              {t('day')}
             </Button>
             <Button
               variant={mode === "week" ? "default" : "outline"}
@@ -356,7 +359,7 @@ export function CalendarView() {
               className="font-normal h-7 text-xs px-2"
             >
               <CalendarDays className="h-3 w-3 mr-1" />
-              Semaine
+              {t('week')}
             </Button>
             <Button
               variant={mode === "month" ? "default" : "outline"}
@@ -365,7 +368,7 @@ export function CalendarView() {
               className="font-normal h-7 text-xs px-2"
             >
               <CalendarIcon className="h-3 w-3 mr-1" />
-              Mois
+              {t('month')}
             </Button>
           </div>
           <h2 className="text-lg font-medium capitalize">
@@ -402,7 +405,7 @@ export function CalendarView() {
         {/* Jours de la semaine (masqué en vue jour) */}
         {mode !== "day" && (
           <div className="grid grid-cols-7 gap-1 mb-1">
-            {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(day => (
+            {[t('monday'), t('tuesday'), t('wednesday'), t('thursday'), t('friday'), t('saturday'), t('sunday')].map(day => (
               <div key={day} className="text-center text-[10px] font-medium text-muted-foreground py-1">
                 {day}
               </div>
@@ -447,9 +450,9 @@ export function CalendarView() {
                               borderLeft: `2px solid ${event.color}`
                             }}
                             title={`${event.projectTitle} - ${
-                              event.type === 'start' ? 'Début' :
-                              event.type === 'deadline' ? 'Échéance' :
-                              event.type === 'tracker' ? 'Tracker' :
+                              event.type === 'start' ? t('start') :
+                              event.type === 'deadline' ? t('end') :
+                              event.type === 'tracker' ? t('tracker') :
                               ''
                             }`}
                           >
@@ -488,7 +491,7 @@ export function CalendarView() {
                   return (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center text-muted-foreground">
-                        <p className="text-sm">Aucun événement pour cette journée</p>
+                        <p className="text-sm">{t('noEventDesc')}</p>
                       </div>
                     </div>
                   )
@@ -513,10 +516,10 @@ export function CalendarView() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-medium text-base" style={{ color: event.color }}>
-                            {event.type === 'start' && '▶ Début de projet'}
-                            {event.type === 'deadline' && '🏁 Échéance'}
-                            {event.type === 'duration' && '— Projet en cours'}
-                            {event.type === 'tracker' && '✓ Tracker'}
+                            {event.type === 'start' && `▶ ${t('projectStart')}`}
+                            {event.type === 'deadline' && `🏁 ${t('projectDeadline')}`}
+                            {event.type === 'duration' && `— ${t('projectDuration')}`}
+                            {event.type === 'tracker' && `✓ ${t('tracker')}`}
                           </h3>
                           <Badge variant="secondary" className="text-xs">
                             {event.projectCategory}
@@ -569,7 +572,7 @@ export function CalendarView() {
                     <div className="flex-1 space-y-1 overflow-y-auto min-h-0">
                       {events.length === 0 ? (
                         <div className="text-center text-[9px] text-muted-foreground py-2">
-                          Aucun événement
+                          {t('noEvent')}
                         </div>
                       ) : (
                         events.map((event, idx) => (
@@ -583,10 +586,10 @@ export function CalendarView() {
                             onClick={() => router.push(`/projet/${event.projectId}`)}
                           >
                             <div className="font-medium mb-0.5 leading-tight" style={{ color: event.color }}>
-                              {event.type === 'start' && '▶ Début'}
-                              {event.type === 'deadline' && '🏁 Échéance'}
-                              {event.type === 'duration' && '— En cours'}
-                              {event.type === 'tracker' && '✓ Tracker'}
+                              {event.type === 'start' && `▶ ${t('start')}`}
+                              {event.type === 'deadline' && `🏁 ${t('end')}`}
+                              {event.type === 'duration' && `— ${t('duration')}`}
+                              {event.type === 'tracker' && `✓ ${t('tracker')}`}
                             </div>
                             <div className="text-[9px] font-normal text-foreground leading-tight">
                               {event.type === 'tracker' ? event.trackerTitle : event.projectTitle}
@@ -607,19 +610,19 @@ export function CalendarView() {
           <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
             <div className="flex items-center gap-1">
               <span>▶</span>
-              <span>Début</span>
+              <span>{t('start')}</span>
             </div>
             <div className="flex items-center gap-1">
               <span>🏁</span>
-              <span>Échéance</span>
+              <span>{t('end')}</span>
             </div>
             <div className="flex items-center gap-1">
               <span>—</span>
-              <span>Durée</span>
+              <span>{t('duration')}</span>
             </div>
             <div className="flex items-center gap-1">
               <span>✓</span>
-              <span>Tracker</span>
+              <span>{t('tracker')}</span>
             </div>
           </div>
         </div>

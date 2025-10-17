@@ -11,6 +11,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { ArrowLeft, Loader2, Save, User, MapPin, Clock, Bell, Calendar, Plus, Trash2, Ban, Shield } from "lucide-react"
 import { getUser } from "@/lib/auth"
 import { useToast } from "@/hooks/use-toast"
+import { useTranslations } from "next-intl"
 
 interface UserProfile {
   user_id?: string
@@ -35,15 +36,6 @@ interface UserProfile {
   notification_time: string
 }
 
-const DAYS_OF_WEEK = [
-  { value: 1, label: "Lundi", short: "Lun" },
-  { value: 2, label: "Mardi", short: "Mar" },
-  { value: 3, label: "Mercredi", short: "Mer" },
-  { value: 4, label: "Jeudi", short: "Jeu" },
-  { value: 5, label: "Vendredi", short: "Ven" },
-  { value: 6, label: "Samedi", short: "Sam" },
-  { value: 0, label: "Dimanche", short: "Dim" },
-]
 
 interface BlockedTimeSlot {
   id: string
@@ -62,17 +54,29 @@ const TIMEZONES = [
   { value: "Asia/Tokyo", label: "Tokyo (UTC+9)" },
 ]
 
-const GENDERS = [
-  { value: "male", label: "Homme" },
-  { value: "female", label: "Femme" },
-  { value: "non_binary", label: "Non-binaire" },
-  { value: "other", label: "Autre" },
-  { value: "prefer_not_to_say", label: "Je préfère ne pas répondre" },
-]
-
 export default function ProfilePage() {
   const router = useRouter()
   const { toast } = useToast()
+  const t = useTranslations("profile")
+  const tCommon = useTranslations("common")
+
+  const DAYS_OF_WEEK = [
+    { value: 1, label: t("monday"), short: t("monday").substring(0, 3) },
+    { value: 2, label: t("tuesday"), short: t("tuesday").substring(0, 3) },
+    { value: 3, label: t("wednesday"), short: t("wednesday").substring(0, 3) },
+    { value: 4, label: t("thursday"), short: t("thursday").substring(0, 3) },
+    { value: 5, label: t("friday"), short: t("friday").substring(0, 3) },
+    { value: 6, label: t("saturday"), short: t("saturday").substring(0, 3) },
+    { value: 0, label: t("sunday"), short: t("sunday").substring(0, 3) },
+  ]
+
+  const GENDERS = [
+    { value: "male", label: t("genderMale") },
+    { value: "female", label: t("genderFemale") },
+    { value: "non_binary", label: t("genderNonBinary") },
+    { value: "other", label: t("genderOther") },
+    { value: "prefer_not_to_say", label: t("genderPreferNotToSay") },
+  ]
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [blockedSlots, setBlockedSlots] = useState<BlockedTimeSlot[]>([])
@@ -173,22 +177,22 @@ export default function ProfilePage() {
 
       if (response.ok) {
         toast({
-          title: "Profil sauvegardé",
-          description: "Vos modifications ont été enregistrées avec succès.",
+          title: t("profileSaved"),
+          description: t("profileSavedDesc"),
         })
       } else {
         console.error("Erreur serveur:", data)
         toast({
-          title: "Erreur",
-          description: `Erreur lors de la sauvegarde: ${data.error || "Erreur inconnue"}`,
+          title: t("profileError"),
+          description: `${t("profileErrorDesc")}: ${data.error || tCommon("error")}`,
           variant: "destructive",
         })
       }
     } catch (error) {
       console.error("Erreur:", error)
       toast({
-        title: "Erreur",
-        description: "Erreur lors de la sauvegarde: " + (error as Error).message,
+        title: t("profileError"),
+        description: t("profileErrorDesc") + ": " + (error as Error).message,
         variant: "destructive",
       })
     } finally {
@@ -217,8 +221,8 @@ export default function ProfilePage() {
   async function addBlockedSlot() {
     if (!newSlot.title || newSlot.days_of_week.length === 0) {
       toast({
-        title: "Erreur",
-        description: "Veuillez renseigner un titre et au moins un jour",
+        title: t("slotError"),
+        description: t("slotErrorDesc"),
         variant: "destructive",
       })
       return
@@ -246,15 +250,15 @@ export default function ProfilePage() {
           days_of_week: [],
         })
         toast({
-          title: "Créneau ajouté",
-          description: "Le créneau bloqué a été ajouté avec succès.",
+          title: t("slotAdded"),
+          description: t("slotAddedDesc"),
         })
       }
     } catch (error) {
       console.error("Erreur:", error)
       toast({
-        title: "Erreur",
-        description: "Erreur lors de l'ajout du créneau",
+        title: t("slotError"),
+        description: tCommon("error"),
         variant: "destructive",
       })
     }
@@ -269,15 +273,15 @@ export default function ProfilePage() {
       if (response.ok) {
         setBlockedSlots(blockedSlots.filter((slot) => slot.id !== id))
         toast({
-          title: "Créneau supprimé",
-          description: "Le créneau bloqué a été supprimé avec succès.",
+          title: t("slotDeleted"),
+          description: t("slotDeletedDesc"),
         })
       }
     } catch (error) {
       console.error("Erreur:", error)
       toast({
-        title: "Erreur",
-        description: "Erreur lors de la suppression",
+        title: t("slotError"),
+        description: tCommon("error"),
         variant: "destructive",
       })
     }
@@ -326,7 +330,7 @@ export default function ProfilePage() {
         <div className="container mx-auto px-6 py-6 flex items-center justify-between">
           <Button variant="ghost" className="font-light" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Retour
+            {tCommon("back")}
           </Button>
           <div className="flex items-center gap-2">
             <ThemeToggle />
@@ -334,12 +338,12 @@ export default function ProfilePage() {
               {saving ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Sauvegarde...
+                  {tCommon("saving")}
                 </>
               ) : (
                 <>
                   <Save className="h-4 w-4 mr-2" />
-                  Enregistrer
+                  {tCommon("save")}
                 </>
               )}
             </Button>
@@ -350,9 +354,9 @@ export default function ProfilePage() {
       <main className="flex-1 container mx-auto px-6 py-12">
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="space-y-2">
-            <h1 className="text-4xl font-light tracking-tight">Mon profil</h1>
+            <h1 className="text-4xl font-light tracking-tight">{t("title")}</h1>
             <p className="text-muted-foreground font-light">
-              Gérez vos informations personnelles et vos préférences de travail
+              {t("subtitle")}
             </p>
           </div>
 
@@ -360,26 +364,26 @@ export default function ProfilePage() {
           <Card className="p-6 border-border/50 bg-card/50 backdrop-blur-sm space-y-6">
             <div className="flex items-center gap-2">
               <User className="h-5 w-5 text-muted-foreground" />
-              <h3 className="text-xl font-light">Informations personnelles</h3>
+              <h3 className="text-xl font-light">{t("personalInfo")}</h3>
             </div>
 
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="full_name" className="font-light">
-                  Nom complet
+                  {t("fullName")}
                 </Label>
                 <Input
                   id="full_name"
                   value={profile.full_name}
                   onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-                  placeholder="Votre nom complet"
+                  placeholder={t("fullNamePlaceholder")}
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="birth_date" className="font-light">
-                    Date de naissance
+                    {t("birthDate")}
                   </Label>
                   <Input
                     id="birth_date"
@@ -391,7 +395,7 @@ export default function ProfilePage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="gender" className="font-light">
-                    Genre
+                    {t("gender")}
                   </Label>
                   <select
                     id="gender"
@@ -399,7 +403,7 @@ export default function ProfilePage() {
                     onChange={(e) => setProfile({ ...profile, gender: e.target.value })}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <option value="">Sélectionnez...</option>
+                    <option value="">{t("genderSelect")}</option>
                     {GENDERS.map((gender) => (
                       <option key={gender.value} value={gender.value}>
                         {gender.label}
@@ -411,13 +415,13 @@ export default function ProfilePage() {
 
               <div className="space-y-2">
                 <Label htmlFor="bio" className="font-light">
-                  Bio
+                  {t("bio")}
                 </Label>
                 <Textarea
                   id="bio"
                   value={profile.bio}
                   onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                  placeholder="Parlez-nous de vous..."
+                  placeholder={t("bioPlaceholder")}
                   className="min-h-[100px] resize-none"
                 />
               </div>
@@ -426,20 +430,20 @@ export default function ProfilePage() {
                 <div className="space-y-2">
                   <Label htmlFor="location" className="font-light flex items-center gap-2">
                     <MapPin className="h-4 w-4" />
-                    Localisation
+                    {t("location")}
                   </Label>
                   <Input
                     id="location"
                     value={profile.location}
                     onChange={(e) => setProfile({ ...profile, location: e.target.value })}
-                    placeholder="Ville, Pays"
+                    placeholder={t("locationPlaceholder")}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="timezone" className="font-light flex items-center gap-2">
                     <Clock className="h-4 w-4" />
-                    Fuseau horaire
+                    {t("timezone")}
                   </Label>
                   <select
                     id="timezone"
@@ -462,17 +466,17 @@ export default function ProfilePage() {
           <Card className="p-6 border-border/50 bg-card/50 backdrop-blur-sm space-y-6">
             <div className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-muted-foreground" />
-              <h3 className="text-xl font-light">Rythme quotidien & Routines</h3>
+              <h3 className="text-xl font-light">{t("dailyRhythm")}</h3>
             </div>
 
             <div className="space-y-6">
               {/* Horaires */}
               <div className="space-y-4">
-                <h4 className="text-sm font-medium text-muted-foreground">Horaires</h4>
+                <h4 className="text-sm font-medium text-muted-foreground">{t("schedules")}</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="wake_up_time" className="font-light">
-                      Heure de lever
+                      {t("wakeUpTime")}
                     </Label>
                     <Input
                       id="wake_up_time"
@@ -481,13 +485,13 @@ export default function ProfilePage() {
                       onChange={(e) => setProfile({ ...profile, wake_up_time: e.target.value })}
                     />
                     <p className="text-xs text-muted-foreground font-light">
-                      Aucune tâche ne sera planifiée avant cette heure
+                      {t("wakeUpTimeDesc")}
                     </p>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="sleep_time" className="font-light">
-                      Heure de coucher
+                      {t("sleepTime")}
                     </Label>
                     <Input
                       id="sleep_time"
@@ -496,7 +500,7 @@ export default function ProfilePage() {
                       onChange={(e) => setProfile({ ...profile, sleep_time: e.target.value })}
                     />
                     <p className="text-xs text-muted-foreground font-light">
-                      Aucune tâche ne sera planifiée après cette heure
+                      {t("sleepTimeDesc")}
                     </p>
                   </div>
                 </div>
@@ -504,27 +508,27 @@ export default function ProfilePage() {
 
               {/* Routine du matin */}
               <div className="space-y-4">
-                <h4 className="text-sm font-medium text-muted-foreground">Routine matinale</h4>
+                <h4 className="text-sm font-medium text-muted-foreground">{t("morningRoutine")}</h4>
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="morning_routine" className="font-light">
-                      Description de votre routine matinale
+                      {t("morningRoutineDesc")}
                     </Label>
                     <Textarea
                       id="morning_routine"
                       value={profile.morning_routine}
                       onChange={(e) => setProfile({ ...profile, morning_routine: e.target.value })}
-                      placeholder="Ex: Méditation 10min, douche, petit-déjeuner, lecture..."
+                      placeholder={t("morningRoutinePlaceholder")}
                       className="min-h-[80px] resize-none"
                     />
                     <p className="text-xs text-muted-foreground font-light">
-                      Décrivez les activités que vous faites chaque matin. L'IA pourra mieux organiser votre planning.
+                      {t("morningRoutineHelp")}
                     </p>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="morning_routine_duration" className="font-light">
-                      Durée totale (minutes)
+                      {t("morningRoutineDuration")}
                     </Label>
                     <Input
                       id="morning_routine_duration"
@@ -542,27 +546,27 @@ export default function ProfilePage() {
 
               {/* Routine du soir */}
               <div className="space-y-4">
-                <h4 className="text-sm font-medium text-muted-foreground">Routine du soir</h4>
+                <h4 className="text-sm font-medium text-muted-foreground">{t("nightRoutine")}</h4>
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="night_routine" className="font-light">
-                      Description de votre routine du soir
+                      {t("nightRoutineDesc")}
                     </Label>
                     <Textarea
                       id="night_routine"
                       value={profile.night_routine}
                       onChange={(e) => setProfile({ ...profile, night_routine: e.target.value })}
-                      placeholder="Ex: Dîner, rangement, lecture, skincare, préparation du lendemain..."
+                      placeholder={t("nightRoutinePlaceholder")}
                       className="min-h-[80px] resize-none"
                     />
                     <p className="text-xs text-muted-foreground font-light">
-                      Décrivez les activités que vous faites chaque soir avant de dormir.
+                      {t("nightRoutineHelp")}
                     </p>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="night_routine_duration" className="font-light">
-                      Durée totale (minutes)
+                      {t("nightRoutineDuration")}
                     </Label>
                     <Input
                       id="night_routine_duration"
@@ -584,18 +588,18 @@ export default function ProfilePage() {
           <Card className="p-6 border-border/50 bg-card/50 backdrop-blur-sm space-y-6">
             <div className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-muted-foreground" />
-              <h3 className="text-xl font-light">Travail salarié (heures indisponibles)</h3>
+              <h3 className="text-xl font-light">{t("workSchedule")}</h3>
             </div>
 
             <p className="text-sm text-muted-foreground font-light">
-              Indiquez vos horaires de travail salarié. Aucune tâche ne sera planifiée pendant ces heures.
+              {t("workScheduleDesc")}
             </p>
 
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="work_hours_start" className="font-light">
-                    Heure de début
+                    {t("workStart")}
                   </Label>
                   <Input
                     id="work_hours_start"
@@ -604,13 +608,13 @@ export default function ProfilePage() {
                     onChange={(e) => setProfile({ ...profile, work_hours_start: e.target.value })}
                   />
                   <p className="text-xs text-muted-foreground font-light">
-                    Début du travail salarié
+                    {t("workStartDesc")}
                   </p>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="work_hours_end" className="font-light">
-                    Heure de fin
+                    {t("workEnd")}
                   </Label>
                   <Input
                     id="work_hours_end"
@@ -619,13 +623,13 @@ export default function ProfilePage() {
                     onChange={(e) => setProfile({ ...profile, work_hours_end: e.target.value })}
                   />
                   <p className="text-xs text-muted-foreground font-light">
-                    Fin du travail salarié
+                    {t("workEndDesc")}
                   </p>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="daily_work_hours" className="font-light">
-                    Heures disponibles par jour
+                    {t("dailyAvailableHours")}
                   </Label>
                   <Input
                     id="daily_work_hours"
@@ -638,13 +642,13 @@ export default function ProfilePage() {
                     }
                   />
                   <p className="text-xs text-muted-foreground font-light">
-                    Temps dispo pour vos projets
+                    {t("dailyAvailableHoursDesc")}
                   </p>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label className="font-light">Jours de travail préférés</Label>
+                <Label className="font-light">{t("preferredWorkDays")}</Label>
                 <div className="flex flex-wrap gap-2">
                   {DAYS_OF_WEEK.map((day) => (
                     <Button
@@ -668,7 +672,7 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Ban className="h-5 w-5 text-muted-foreground" />
-                <h3 className="text-xl font-light">Créneaux horaires bloqués</h3>
+                <h3 className="text-xl font-light">{t("blockedTimeSlots")}</h3>
               </div>
               <Button
                 variant="outline"
@@ -677,12 +681,12 @@ export default function ProfilePage() {
                 className="font-light"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Ajouter
+                {t("addSlot")}
               </Button>
             </div>
 
             <p className="text-sm text-muted-foreground font-light">
-              Définissez des créneaux récurrents où vous ne voulez pas de tâches planifiées (cours, rendez-vous réguliers, temps famille, etc.)
+              {t("blockedTimeSlotsDesc")}
             </p>
 
             {/* Formulaire d'ajout */}
@@ -691,25 +695,25 @@ export default function ProfilePage() {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="slot_title" className="font-light">
-                      Titre *
+                      {t("slotTitle")}
                     </Label>
                     <Input
                       id="slot_title"
                       value={newSlot.title}
                       onChange={(e) => setNewSlot({ ...newSlot, title: e.target.value })}
-                      placeholder="Ex: Cours de yoga, Déjeuner famille..."
+                      placeholder={t("slotTitlePlaceholder")}
                     />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="slot_description" className="font-light">
-                      Description
+                      {t("slotDescription")}
                     </Label>
                     <Textarea
                       id="slot_description"
                       value={newSlot.description}
                       onChange={(e) => setNewSlot({ ...newSlot, description: e.target.value })}
-                      placeholder="Description optionnelle..."
+                      placeholder={t("slotDescriptionPlaceholder")}
                       className="min-h-[60px] resize-none"
                     />
                   </div>
@@ -717,7 +721,7 @@ export default function ProfilePage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="slot_start" className="font-light">
-                        Heure de début
+                        {t("slotStartTime")}
                       </Label>
                       <Input
                         id="slot_start"
@@ -729,7 +733,7 @@ export default function ProfilePage() {
 
                     <div className="space-y-2">
                       <Label htmlFor="slot_end" className="font-light">
-                        Heure de fin
+                        {t("slotEndTime")}
                       </Label>
                       <Input
                         id="slot_end"
@@ -741,7 +745,7 @@ export default function ProfilePage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="font-light">Jours de la semaine *</Label>
+                    <Label className="font-light">{t("slotDaysOfWeek")}</Label>
                     <div className="flex flex-wrap gap-2">
                       {DAYS_OF_WEEK.map((day) => (
                         <Button
@@ -761,7 +765,7 @@ export default function ProfilePage() {
                   <div className="flex gap-2">
                     <Button onClick={addBlockedSlot} size="sm" className="font-light">
                       <Plus className="h-4 w-4 mr-2" />
-                      Ajouter le créneau
+                      {t("addSlotButton")}
                     </Button>
                     <Button
                       variant="ghost"
@@ -769,7 +773,7 @@ export default function ProfilePage() {
                       onClick={() => setShowNewSlotForm(false)}
                       className="font-light"
                     >
-                      Annuler
+                      {tCommon("cancel")}
                     </Button>
                   </div>
                 </div>
@@ -820,7 +824,7 @@ export default function ProfilePage() {
               </div>
             ) : (
               <p className="text-sm text-muted-foreground font-light text-center py-8">
-                Aucun créneau bloqué pour le moment
+                {t("noBlockedSlots")}
               </p>
             )}
           </Card>
@@ -829,17 +833,17 @@ export default function ProfilePage() {
           <Card className="p-6 border-border/50 bg-card/50 backdrop-blur-sm space-y-6">
             <div className="flex items-center gap-2">
               <Bell className="h-5 w-5 text-muted-foreground" />
-              <h3 className="text-xl font-light">Notifications</h3>
+              <h3 className="text-xl font-light">{t("notificationsTitle")}</h3>
             </div>
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <Label htmlFor="notification_enabled" className="font-light">
-                    Activer les notifications
+                    {t("enableNotifications")}
                   </Label>
                   <p className="text-sm text-muted-foreground font-light">
-                    Recevez des rappels pour vos tâches et objectifs
+                    {t("enableNotificationsDesc")}
                   </p>
                 </div>
                 <Button
@@ -851,14 +855,14 @@ export default function ProfilePage() {
                   }
                   className="font-light"
                 >
-                  {profile.notification_enabled ? "Activé" : "Désactivé"}
+                  {profile.notification_enabled ? t("enabled") : t("disabled")}
                 </Button>
               </div>
 
               {profile.notification_enabled && (
                 <div className="space-y-2">
                   <Label htmlFor="notification_time" className="font-light">
-                    Heure de notification quotidienne
+                    {t("notificationTime")}
                   </Label>
                   <Input
                     id="notification_time"
@@ -875,12 +879,12 @@ export default function ProfilePage() {
           <Card className="p-6 border-border/50 bg-card/50 backdrop-blur-sm space-y-6">
             <div className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-muted-foreground" />
-              <h3 className="text-xl font-light">Données et confidentialité</h3>
+              <h3 className="text-xl font-light">{t("privacyTitle")}</h3>
             </div>
 
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground font-light">
-                Consultez vos droits RGPD, exportez vos données ou supprimez définitivement votre compte et toutes vos informations.
+                {t("privacyDesc")}
               </p>
 
               <Button
@@ -889,7 +893,7 @@ export default function ProfilePage() {
                 onClick={() => router.push("/donnees")}
               >
                 <Shield className="h-4 w-4 mr-2" />
-                Gérer mes données
+                {t("manageData")}
               </Button>
             </div>
           </Card>

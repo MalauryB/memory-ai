@@ -3,6 +3,7 @@
 import { useState } from "react"
 import useSWR from "swr"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
@@ -30,6 +31,8 @@ interface UpcomingStep {
 
 export function AgendaView() {
   const router = useRouter()
+  const t = useTranslations('agenda')
+  const tCommon = useTranslations('common')
   const [updatingStep, setUpdatingStep] = useState<string | null>(null)
 
   // ⚡ OPTIMISATION : Utiliser SWR pour le cache automatique
@@ -128,9 +131,9 @@ export function AgendaView() {
     <div className="max-w-4xl mx-auto space-y-8">
       {/* En-tête */}
       <div className="space-y-2">
-        <h1 className="text-4xl font-semibold tracking-tight">Prochaines étapes</h1>
+        <h1 className="text-4xl font-semibold tracking-tight">{t('title')}</h1>
         <p className="text-muted-foreground font-normal">
-          L'étape en cours et la suivante pour chaque projet
+          {t('subtitle')}
         </p>
       </div>
 
@@ -140,13 +143,13 @@ export function AgendaView() {
           <div className="text-center space-y-4">
             <CheckCircle2 className="h-12 w-12 mx-auto text-muted-foreground" />
             <div className="space-y-2">
-              <h3 className="text-xl font-medium">Aucune étape à venir</h3>
+              <h3 className="text-xl font-medium">{t('noSteps')}</h3>
               <p className="text-muted-foreground font-normal">
-                Toutes vos étapes sont terminées ou vous n'avez pas encore de projet.
+                {t('noStepsDesc')}
               </p>
             </div>
             <Button onClick={() => router.push("/nouveau-projet")} variant="outline">
-              Créer un projet
+              {t('createProject')}
             </Button>
           </div>
         </Card>
@@ -182,7 +185,7 @@ export function AgendaView() {
                   {project.deadline && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground font-normal mt-1">
                       <Calendar className="h-3 w-3" />
-                      <span>Échéance : {formatDeadline(project.deadline)}</span>
+                      <span>{t('deadline', { date: formatDeadline(project.deadline) })}</span>
                     </div>
                   )}
                 </div>
@@ -221,7 +224,7 @@ export function AgendaView() {
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-muted-foreground font-medium">
-                            Étape {step.stepOrderIndex + 1}
+                            {t('step', { index: step.stepOrderIndex + 1 })}
                           </span>
                           {step.stepEstimatedDuration && (
                             <>
@@ -250,7 +253,7 @@ export function AgendaView() {
                             : "bg-muted text-muted-foreground"
                         }`}
                       >
-                        {step.stepStatus === "in_progress" ? "En cours" : "À faire"}
+                        {step.stepStatus === "in_progress" ? t('inProgress') : t('todo')}
                       </span>
                     </div>
                   </Card>

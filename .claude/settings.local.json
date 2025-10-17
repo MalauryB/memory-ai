@@ -4,7 +4,9 @@
       "Bash(pnpm install:*)",
       "Bash(npm:*)",
       "Bash(find:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(tree:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []

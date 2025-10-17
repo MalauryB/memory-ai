@@ -7,8 +7,11 @@ import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 
 export default function AuthPage() {
+  const t = useTranslations("auth")
+  const tCommon = useTranslations("common")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
@@ -32,12 +35,12 @@ export default function AuthPage() {
 
         if (data.user && data.user.identities && data.user.identities.length === 0) {
           setMessage({
-            text: "Cet email est déjà utilisé. Veuillez vous connecter.",
+            text: t("emailAlreadyUsed"),
             type: "error"
           })
         } else {
           setMessage({
-            text: "Inscription réussie ! Vérifiez votre email pour confirmer votre compte.",
+            text: t("signUpSuccess"),
             type: "success"
           })
           setEmail("")
@@ -52,19 +55,19 @@ export default function AuthPage() {
         if (error) throw error
 
         if (data.user) {
-          setMessage({ text: "Connexion réussie !", type: "success" })
+          setMessage({ text: t("signInSuccess"), type: "success" })
           setTimeout(() => router.push("/"), 500)
         }
       }
     } catch (error: any) {
-      let errorMessage = "Une erreur est survenue"
+      let errorMessage = t("genericError")
 
       if (error.message.includes("Invalid login credentials")) {
-        errorMessage = "Email ou mot de passe incorrect"
+        errorMessage = t("invalidCredentials")
       } else if (error.message.includes("Email not confirmed")) {
-        errorMessage = "Veuillez confirmer votre email avant de vous connecter"
+        errorMessage = t("emailNotConfirmed")
       } else if (error.message.includes("Password should be at least 6 characters")) {
-        errorMessage = "Le mot de passe doit contenir au moins 6 caractères"
+        errorMessage = t("passwordTooShort")
       } else if (error.message) {
         errorMessage = error.message
       }
@@ -79,23 +82,23 @@ export default function AuthPage() {
     <div className="min-h-screen flex items-center justify-center px-6 bg-background">
       <Card className="w-full max-w-md p-8 space-y-8 border-border/50 bg-card/50 backdrop-blur-sm">
         <div className="space-y-2 text-center">
-          <h1 className="text-4xl font-semibold tracking-tight">Memo'ry planner</h1>
+          <h1 className="text-4xl font-semibold tracking-tight">{t("appName")}</h1>
           <p className="text-muted-foreground font-normal">
-            {isSignUp ? "Créer un compte" : "Connexion à votre compte"}
+            {isSignUp ? t("createAccount") : t("loginToAccount")}
           </p>
         </div>
 
         <form onSubmit={handleAuth} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="email" className="font-light">
-              Email
+              {t("email")}
             </Label>
             <Input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="votre@email.com"
+              placeholder={t("emailPlaceholder")}
               required
               className="bg-card/50 border-border/50 font-light"
             />
@@ -103,14 +106,14 @@ export default function AuthPage() {
 
           <div className="space-y-2">
             <Label htmlFor="password" className="font-light">
-              Mot de passe
+              {t("password")}
             </Label>
             <Input
               id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder={t("passwordPlaceholder")}
               required
               className="bg-card/50 border-border/50 font-light"
             />
@@ -133,7 +136,7 @@ export default function AuthPage() {
             disabled={loading}
             className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-light"
           >
-            {loading ? "Chargement..." : isSignUp ? "S'inscrire" : "Se connecter"}
+            {loading ? tCommon("loading") : isSignUp ? t("signUp") : t("signIn")}
           </Button>
         </form>
 
@@ -143,7 +146,7 @@ export default function AuthPage() {
             onClick={() => setIsSignUp(!isSignUp)}
             className="text-sm text-muted-foreground hover:text-accent font-light transition-colors"
           >
-            {isSignUp ? "Déjà un compte ? Se connecter" : "Pas de compte ? S'inscrire"}
+            {isSignUp ? t("hasAccount") : t("noAccount")}
           </button>
         </div>
       </Card>

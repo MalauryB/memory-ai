@@ -32,7 +32,8 @@ try {
 // 2. Nettoyer les fichiers de cache
 console.log('\n📁 Nettoyage des fichiers de cache...');
 removeDir('.next');
+removeDir('.turbopack');    // Cache Turbopack (Next.js 15+)
+removeDir('.turbo');        // Cache Turborepo (si utilisé)
 removeDir('node_modules/.cache');
-removeDir('.turbo');
 
 console.log('\n✅ Nettoyage terminé! Vous pouvez maintenant lancer "npm run dev"\n');

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation"
 import { memo, useMemo, useCallback } from "react"
 import useSWR from "swr"
+import { useTranslations } from "next-intl"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Plus, Calendar, Loader2 } from "lucide-react"
@@ -33,6 +34,8 @@ interface Project {
 // ⚡ OPTIMISATION : Memo pour éviter re-renders inutiles
 export const ProjectsList = memo(function ProjectsList() {
   const router = useRouter()
+  const t = useTranslations('projects')
+  const tCommon = useTranslations('common')
 
   // ⚡ OPTIMISATION : Utiliser SWR pour le cache automatique
   const { data, error, isLoading } = useSWR("/api/projects", {
@@ -54,21 +57,21 @@ export const ProjectsList = memo(function ProjectsList() {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
     if (diffDays < 0) {
-      return "Échéance dépassée"
+      return t('deadlineExceeded')
     } else if (diffDays === 0) {
-      return "Aujourd'hui"
+      return t('today')
     } else if (diffDays === 1) {
-      return "Demain"
+      return t('tomorrow')
     } else if (diffDays < 30) {
-      return `${diffDays} jours restants`
+      return t('daysRemaining', { count: diffDays })
     } else if (diffDays < 365) {
       const months = Math.floor(diffDays / 30)
-      return `${months} mois restant${months > 1 ? "s" : ""}`
+      return t('monthsRemaining', { count: months })
     } else {
       const years = Math.floor(diffDays / 365)
-      return `${years} an${years > 1 ? "s" : ""} restant${years > 1 ? "s" : ""}`
+      return t('yearsRemaining', { count: years })
     }
-  }, [])
+  }, [t])
 
   if (isLoading) {
     return (
@@ -82,14 +85,14 @@ export const ProjectsList = memo(function ProjectsList() {
     return (
       <div className="max-w-2xl mx-auto text-center py-20 space-y-6">
         <div className="space-y-3">
-          <h3 className="text-2xl font-medium tracking-tight">Aucun projet pour le moment</h3>
+          <h3 className="text-2xl font-medium tracking-tight">{t('noProjects')}</h3>
           <p className="text-muted-foreground font-normal">
-            Créez votre premier projet de vie et commencez à architecturer votre avenir.
+            {t('noProjectsDesc')}
           </p>
         </div>
         <Button onClick={() => router.push("/nouveau-projet")} className="font-normal">
           <Plus className="h-4 w-4 mr-2" />
-          Créer un projet
+          {t('createProject')}
         </Button>
       </div>
     )
@@ -99,14 +102,14 @@ export const ProjectsList = memo(function ProjectsList() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h2 className="text-3xl font-semibold tracking-tight">Mes projets</h2>
+          <h2 className="text-3xl font-semibold tracking-tight">{t('title')}</h2>
           <p className="text-muted-foreground font-normal">
-            {projects.length} projet{projects.length > 1 ? "s" : ""} en cours
+            {t('subtitle', { count: projects.length })}
           </p>
         </div>
         <Button onClick={() => router.push("/nouveau-projet")} className="font-normal">
           <Plus className="h-4 w-4 mr-2" />
-          Nouveau projet
+          {t('newProject')}
         </Button>
       </div>
 
@@ -145,14 +148,14 @@ export const ProjectsList = memo(function ProjectsList() {
 
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground font-normal">Progression</span>
+                  <span className="text-muted-foreground font-normal">{t('progress')}</span>
                   <span className="font-normal">{project.progress}%</span>
                 </div>
                 <Progress value={project.progress} className="h-1" />
               </div>
 
               <div className="flex items-center justify-between text-xs text-muted-foreground font-normal">
-                <span>{project.project_steps?.length || 0} étapes</span>
+                <span>{t('steps', { count: project.project_steps?.length || 0 })}</span>
                 {formatDeadline(project.deadline) && (
                   <div className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
