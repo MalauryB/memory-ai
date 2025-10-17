@@ -26,7 +26,9 @@ export default function OnboardingPage() {
     // Marquer l'onboarding comme complété même si skip
     try {
       const profileResponse = await fetch("/api/profile")
+
       if (profileResponse.ok) {
+        // Profil existe déjà, on le met à jour
         const { profile } = await profileResponse.json()
 
         await fetch("/api/profile", {
@@ -35,6 +37,21 @@ export default function OnboardingPage() {
           body: JSON.stringify({
             ...profile,
             onboarding_completed: true,
+          }),
+        })
+      } else {
+        // Pas de profil existant, on en crée un minimal
+        await fetch("/api/profile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            full_name: user?.email?.split('@')[0] || "Utilisateur",
+            onboarding_completed: true,
+            wake_up_time: "07:00:00",
+            sleep_time: "23:00:00",
+            work_hours_start: "09:00:00",
+            work_hours_end: "18:00:00",
+            timezone: "Europe/Paris",
           }),
         })
       }
