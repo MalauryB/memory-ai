@@ -45,7 +45,19 @@ export function LanguageSwitcher() {
 
   const currentLocale = (params.locale as Locale) || 'fr';
 
-  const switchLocale = (newLocale: Locale) => {
+  const switchLocale = async (newLocale: Locale) => {
+    try {
+      // Sauvegarder la préférence en base de données
+      await fetch('/api/profile/locale', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ locale: newLocale }),
+      });
+    } catch (error) {
+      console.error('Failed to save locale preference:', error);
+      // Continue anyway avec le changement de locale
+    }
+
     // Remplacer la locale dans le pathname
     const segments = pathname.split('/');
     segments[1] = newLocale;
