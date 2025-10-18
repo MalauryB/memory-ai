@@ -16,7 +16,7 @@ export function PremiumBadge({ accountType, variant = "default", showIcon = true
 
   if (variant === "large") {
     return (
-      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold">
+      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-500 to-green-500 text-white font-semibold">
         {showIcon && <Sparkles className="h-4 w-4" />}
         <span>Premium</span>
       </div>
@@ -24,7 +24,7 @@ export function PremiumBadge({ accountType, variant = "default", showIcon = true
   }
 
   return (
-    <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0">
+    <Badge className="bg-gradient-to-r from-emerald-500 to-green-500 text-white border-0">
       {showIcon && <Sparkles className="h-3 w-3 mr-1" />}
       Premium
     </Badge>
