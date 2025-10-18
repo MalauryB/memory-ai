@@ -256,9 +256,14 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
       if (data.success) {
         setShowUpgradeModal(false)
         alert('Félicitations ! Vous êtes maintenant Premium ✨')
+        // Recharger la page pour mettre à jour l'interface
+        window.location.reload()
+      } else {
+        alert(data.message || 'Erreur lors de l\'upgrade')
       }
     } catch (error) {
       console.error('Error upgrading:', error)
+      alert('Erreur lors de l\'upgrade. Veuillez réessayer.')
     }
   }
 

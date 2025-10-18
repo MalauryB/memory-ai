@@ -7,9 +7,10 @@ import useSWR from "swr"
 import { useTranslations } from 'next-intl'
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Calendar, LogOut, FolderKanban, ListTodo, User, Activity, CalendarDays, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
+import { Calendar, LogOut, FolderKanban, ListTodo, User, Activity, CalendarDays, ChevronLeft, ChevronRight, Loader2, Sparkles } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { LanguageSwitcher } from "@/components/language-switcher"
+import { UpgradeModal } from "@/components/upgrade-modal"
 import { signOut } from "@/lib/auth"
 import { useAuth } from "@/hooks/use-auth"
 
@@ -26,6 +27,8 @@ export default function Home() {
   const t = useTranslations('nav')
   const [currentView, setCurrentView] = useState<View>("goals")
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [accountType, setAccountType] = useState<'standard' | 'premium'>('standard')
   const router = useRouter()
 
   // ⚡ OPTIMISATION : Utiliser useAuth avec SWR pour cache + vérification non-bloquante
@@ -75,9 +78,38 @@ export default function Home() {
     }
   }, [isAuthenticated])
 
+  // Récupérer le type de compte de l'utilisateur
+  useEffect(() => {
+    if (isAuthenticated && profileData?.profile) {
+      setAccountType(profileData.profile.account_type || 'standard')
+    }
+  }, [isAuthenticated, profileData])
+
   async function handleSignOut() {
     await signOut()
     router.push("/auth")
+  }
+
+  async function handleUpgrade() {
+    try {
+      const response = await fetch('/api/account/upgrade', {
+        method: 'POST'
+      })
+      const data = await response.json()
+
+      if (data.success) {
+        setShowUpgradeModal(false)
+        setAccountType('premium')
+        // Rafraîchir les données du profil
+        mutate('/api/profile')
+        alert('Félicitations ! Vous êtes maintenant Premium ✨')
+      } else {
+        alert(data.message || 'Erreur lors de l\'upgrade')
+      }
+    } catch (error) {
+      console.error('Error upgrading:', error)
+      alert('Erreur lors de l\'upgrade. Veuillez réessayer.')
+    }
   }
 
   // ⚡ Afficher l'UI immédiatement, même pendant le chargement
@@ -161,6 +193,17 @@ export default function Home() {
         <header className="border-b border-border backdrop-blur-sm sticky top-0 z-50 bg-background/80">
           <div className="px-6 py-4 flex items-center justify-end">
             <div className="flex items-center gap-2">
+              {accountType === 'standard' && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="bg-gradient-to-r from-emerald-700 to-emerald-600 hover:from-emerald-800 hover:to-emerald-700 text-white"
+                  onClick={() => setShowUpgradeModal(true)}
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Passer Premium
+                </Button>
+              )}
               <LanguageSwitcher />
               <ThemeToggle />
               <Button variant="ghost" size="icon" className="rounded-full" onClick={() => router.push("/profil")}>
@@ -188,6 +231,12 @@ export default function Home() {
           </Suspense>
         </main>
       </div>
+
+      <UpgradeModal
+        open={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        onUpgrade={handleUpgrade}
+      />
     </div>
   )
 }
