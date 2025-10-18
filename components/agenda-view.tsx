@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo, useCallback } from "react"
 import useSWR from "swr"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
@@ -43,11 +43,11 @@ export function AgendaView() {
 
   const steps = data?.steps || []
 
-  async function updateStepStatus(
+  const updateStepStatus = useCallback(async (
     projectId: string,
     stepId: string,
     newStatus: "pending" | "in_progress" | "completed"
-  ) {
+  ) => {
     setUpdatingStep(stepId)
 
     // ⚡ OPTIMISATION : Mutation optimiste
@@ -78,9 +78,9 @@ export function AgendaView() {
     } finally {
       setUpdatingStep(null)
     }
-  }
+  }, [steps, refreshSteps])
 
-  const getNextStatus = (currentStatus: string) => {
+  const getNextStatus = useCallback((currentStatus: string) => {
     switch (currentStatus) {
       case "pending":
         return "in_progress"
@@ -89,9 +89,9 @@ export function AgendaView() {
       default:
         return "pending"
     }
-  }
+  }, [])
 
-  const formatDeadline = (deadline: string | null) => {
+  const formatDeadline = useCallback((deadline: string | null) => {
     if (!deadline) return null
     const date = new Date(deadline)
     return date.toLocaleDateString("fr-FR", {
@@ -99,10 +99,10 @@ export function AgendaView() {
       month: "short",
       year: "numeric",
     })
-  }
+  }, [])
 
-  // Grouper les étapes par projet
-  const groupedSteps = steps.reduce((acc, step) => {
+  // ⚡ OPTIMISATION : Memoïzer le groupement des étapes
+  const groupedSteps = useMemo(() => steps.reduce((acc, step) => {
     if (!acc[step.projectId]) {
       acc[step.projectId] = {
         project: {
@@ -117,7 +117,7 @@ export function AgendaView() {
     }
     acc[step.projectId].steps.push(step)
     return acc
-  }, {} as Record<string, { project: any; steps: UpcomingStep[] }>)
+  }, {} as Record<string, { project: any; steps: UpcomingStep[] }>), [steps])
 
   if (isLoading) {
     return (

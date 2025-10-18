@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { Card } from "@/components/ui/card"
@@ -107,7 +107,7 @@ export function CalendarView() {
     return colors[index % colors.length]
   }
 
-  function toggleProjectVisibility(projectId: string) {
+  const toggleProjectVisibility = useCallback((projectId: string) => {
     setVisibleProjects(prev => {
       const newSet = new Set(prev)
       if (newSet.has(projectId)) {
@@ -117,10 +117,15 @@ export function CalendarView() {
       }
       return newSet
     })
-  }
+  }, [])
 
-  // Générer les événements du calendrier
-  function generateCalendarEvents(): CalendarEvent[] {
+  // 🚀 OPTIMISATION: Index des projets pour recherche O(1) au lieu de O(n)
+  const projectsMap = useMemo(() =>
+    new Map(projects.map(p => [p.id, p]))
+  , [projects])
+
+  // 🚀 OPTIMISATION: Memoize les événements du calendrier
+  const calendarEvents = useMemo(() => {
     const events: CalendarEvent[] = []
 
     projects.forEach(project => {
@@ -172,11 +177,11 @@ export function CalendarView() {
       }
     })
 
-    // Ajouter les trackers
+    // Ajouter les trackers (utilise projectsMap pour recherche O(1))
     trackers.forEach(tracker => {
       if (!visibleProjects.has(tracker.project_id)) return
 
-      const project = projects.find(p => p.id === tracker.project_id)
+      const project = projectsMap.get(tracker.project_id)
       if (!project) return
 
       // Générer les dates selon la fréquence
@@ -224,10 +229,10 @@ export function CalendarView() {
     })
 
     return events
-  }
+  }, [projects, trackers, visibleProjects, currentDate, projectsMap])
 
-  // Générer les jours du mois actuel
-  function generateCalendarDays() {
+  // 🚀 OPTIMISATION: Memoize les jours du calendrier
+  const calendarDays = useMemo(() => {
     const year = currentDate.getFullYear()
     const month = currentDate.getMonth()
 
@@ -248,15 +253,13 @@ export function CalendarView() {
     }
 
     return days
-  }
+  }, [currentDate])
 
-  // Mémoriser les événements du calendrier pour éviter de les régénérer à chaque fois
-  const calendarEvents = generateCalendarEvents()
-
-  function getEventsForDay(date: Date): CalendarEvent[] {
+  // 🚀 OPTIMISATION: Memoize la fonction pour éviter re-créations
+  const getEventsForDay = useCallback((date: Date): CalendarEvent[] => {
     const dateStr = date.toISOString().split('T')[0]
     return calendarEvents.filter(event => event.date === dateStr)
-  }
+  }, [calendarEvents])
 
   function changeMonth(delta: number) {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + delta, 1))
@@ -293,7 +296,8 @@ export function CalendarView() {
     return days
   }
 
-  const calendarDays = mode === "month" ? generateCalendarDays() : []
+  // 🚀 OPTIMISATION: Utilise le calendarDays memoizé au lieu de le recalculer
+  const displayDays = mode === "month" ? calendarDays : []
   const weekDays = mode === "week" ? generateWeekDays() : []
   const monthName = currentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
   const weekRange = mode === "week"

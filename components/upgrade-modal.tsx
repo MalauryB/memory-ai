@@ -1,5 +1,6 @@
 "use client"
 
+import { memo } from "react"
 import {
   Dialog,
   DialogContent,
@@ -17,7 +18,7 @@ interface UpgradeModalProps {
   onUpgrade: () => void
 }
 
-export function UpgradeModal({ open, onClose, onUpgrade }: UpgradeModalProps) {
+function UpgradeModalComponent({ open, onClose, onUpgrade }: UpgradeModalProps) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
@@ -92,3 +93,9 @@ export function UpgradeModal({ open, onClose, onUpgrade }: UpgradeModalProps) {
     </Dialog>
   )
 }
+
+// Export avec React.memo pour éviter les re-renders inutiles
+// Ne re-render que si l'état 'open' change
+export const UpgradeModal = memo(UpgradeModalComponent, (prevProps, nextProps) => {
+  return prevProps.open === nextProps.open
+})

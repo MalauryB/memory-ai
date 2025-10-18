@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback, memo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -28,7 +28,7 @@ interface ProjectFormData {
   steps: ProjectStep[]
 }
 
-export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectFormData) => void }) {
+function NewProjectFormComponent({ onComplete }: { onComplete?: (data: ProjectFormData) => void }) {
   const [currentStep, setCurrentStep] = useState(1)
   const totalSteps = 4
 
@@ -64,73 +64,73 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
 
   const progressPercentage = (currentStep / totalSteps) * 100
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1)
     }
-  }
+  }, [currentStep])
 
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1)
     }
-  }
+  }, [currentStep])
 
-  const handleAddStep = () => {
+  const handleAddStep = useCallback(() => {
     if (newStep.title.trim()) {
       const step: ProjectStep = {
         id: Date.now().toString(),
         ...newStep
       }
-      setFormData({
-        ...formData,
-        steps: [...formData.steps, step]
-      })
+      setFormData(prev => ({
+        ...prev,
+        steps: [...prev.steps, step]
+      }))
       setNewStep({
         title: "",
         description: "",
         estimatedDuration: ""
       })
     }
-  }
+  }, [newStep])
 
-  const handleRemoveStep = (id: string) => {
-    setFormData({
-      ...formData,
-      steps: formData.steps.filter(step => step.id !== id)
-    })
-  }
+  const handleRemoveStep = useCallback((id: string) => {
+    setFormData(prev => ({
+      ...prev,
+      steps: prev.steps.filter(step => step.id !== id)
+    }))
+  }, [])
 
-  const handleStartEdit = (step: ProjectStep) => {
+  const handleStartEdit = useCallback((step: ProjectStep) => {
     setEditingStepId(step.id)
     setEditingStepData({
       title: step.title,
       description: step.description,
       estimatedDuration: step.estimatedDuration
     })
-  }
+  }, [])
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = useCallback(() => {
     if (editingStepId && editingStepData.title.trim()) {
-      setFormData({
-        ...formData,
-        steps: formData.steps.map(step =>
+      setFormData(prev => ({
+        ...prev,
+        steps: prev.steps.map(step =>
           step.id === editingStepId
             ? { ...step, ...editingStepData }
             : step
         )
-      })
+      }))
       setEditingStepId(null)
       setEditingStepData({ title: "", description: "", estimatedDuration: "" })
     }
-  }
+  }, [editingStepId, editingStepData])
 
-  const handleCancelEdit = () => {
+  const handleCancelEdit = useCallback(() => {
     setEditingStepId(null)
     setEditingStepData({ title: "", description: "", estimatedDuration: "" })
-  }
+  }, [])
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       // Vérifier le type de fichier
@@ -153,15 +153,15 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
       }
       reader.readAsDataURL(file)
     }
-  }
+  }, [])
 
-  const handleRemoveImage = () => {
+  const handleRemoveImage = useCallback(() => {
     setImageFile(null)
     setImagePreview("")
-    setFormData({ ...formData, imageUrl: "" })
-  }
+    setFormData(prev => ({ ...prev, imageUrl: "" }))
+  }, [])
 
-  const uploadImage = async (): Promise<string | null> => {
+  const uploadImage = useCallback(async (): Promise<string | null> => {
     if (!imageFile) return null
 
     setIsUploadingImage(true)
@@ -194,9 +194,9 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
     } finally {
       setIsUploadingImage(false)
     }
-  }
+  }, [imageFile])
 
-  const handleGenerateSteps = async () => {
+  const handleGenerateSteps = useCallback(async () => {
     setIsGenerating(true)
     try {
       const response = await fetch("/api/generate-steps", {
@@ -234,19 +234,19 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
         id: Date.now().toString() + Math.random(),
       }))
 
-      setFormData({
-        ...formData,
+      setFormData(prev => ({
+        ...prev,
         steps: generatedSteps,
-      })
+      }))
     } catch (error) {
       console.error("Erreur:", error)
       alert("Erreur lors de la génération des étapes. Veuillez réessayer.")
     } finally {
       setIsGenerating(false)
     }
-  }
+  }, [formData.title, formData.description, formData.category, formData.startDate, formData.deadline])
 
-  const handleUpgrade = async () => {
+  const handleUpgrade = useCallback(async () => {
     try {
       const response = await fetch('/api/account/upgrade', {
         method: 'POST'
@@ -265,9 +265,9 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
       console.error('Error upgrading:', error)
       alert('Erreur lors de l\'upgrade. Veuillez réessayer.')
     }
-  }
+  }, [])
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (onComplete) {
       // Upload l'image si elle existe
       let imageUrl = formData.imageUrl
@@ -283,9 +283,9 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
         imageUrl
       })
     }
-  }
+  }, [onComplete, formData, imageFile, uploadImage])
 
-  const canProceed = () => {
+  const canProceed = useCallback(() => {
     switch (currentStep) {
       case 1:
         return formData.title.trim() !== ""
@@ -298,7 +298,7 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
       default:
         return false
     }
-  }
+  }, [currentStep, formData.title, formData.description, formData.category, formData.steps.length])
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
@@ -687,3 +687,6 @@ export function NewProjectForm({ onComplete }: { onComplete?: (data: ProjectForm
     </div>
   )
 }
+
+// Export avec React.memo pour éviter les re-renders inutiles
+export const NewProjectForm = memo(NewProjectFormComponent)

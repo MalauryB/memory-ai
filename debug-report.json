@@ -1,0 +1,65 @@
+{
+  "timestamp": "2025-10-18T06:20:31.995Z",
+  "totalIssues": 220,
+  "details": {
+    "console.log": {
+      "count": 78,
+      "severity": "WARNING",
+      "description": "console.log trouvés (debug)",
+      "lines": [
+        "app/api/daily-plan/route.ts:    console.log(`📅 Génération planning pour: ${today}${isToday ? ' (aujourd\\'hui)' : ' (jour futur)'}`)",
+        "app/api/daily-plan/route.ts:        console.log(`✨ Cache HIT pour ${cacheKey}`)",
+        "app/api/daily-plan/route.ts:    console.log(`📊 Projets trouvés: ${projects.length}`)",
+        "app/api/daily-plan/route.ts:      console.log(`   Projets:`, projects.map(p => `${p.title} (${p.status})`).join(', '))",
+        "app/api/daily-plan/route.ts:      console.log(\"⚠️ Aucun projet ni activité personnalisée sélectionnée\")",
+        "app/api/daily-plan/route.ts:    console.log(`📝 Substeps trouvées: ${substeps.length}`)",
+        "app/api/daily-plan/route.ts:    console.log(`🎨 Activités personnalisées sélectionnées: ${customActivities.length}`)",
+        "app/api/daily-plan/route.ts:    console.log(`✅ Planning - ${enrichedSubsteps.length} substeps + ${customActivities.length} activités personnalisées`)",
+        "app/api/daily-plan/route.ts:    console.log(`🎯 Planning généré: ${dailyPlan.length} tâches au total`)",
+        "app/api/daily-plan/route.ts:    console.log(`💾 Cache STORE pour ${cacheKey}`)"
+      ]
+    },
+    "console.error (API)": {
+      "count": 89,
+      "severity": "ERROR",
+      "description": "console.error dans les routes API (utiliser logger)",
+      "lines": [
+        "app/api/agenda/route.ts:      console.error(\"Erreur lors de la récupération des étapes:\", error)",
+        "app/api/agenda/route.ts:    console.error(\"Erreur:\", error)",
+        "app/api/ai/stats/route.ts:      console.error('Error fetching user profile:', profileError)",
+        "app/api/ai/stats/route.ts:      console.error('Error fetching AI generation stats:', error)",
+        "app/api/ai/stats/route.ts:    console.error('Error fetching AI generation stats:', error)",
+        "app/api/ai/track-generation/route.ts:      console.error('Error fetching user profile:', profileError)",
+        "app/api/ai/track-generation/route.ts:      console.error('Error fetching AI generation stats:', fetchError)",
+        "app/api/ai/track-generation/route.ts:        console.error('Error updating AI generation stats:', error)",
+        "app/api/ai/track-generation/route.ts:        console.error('Error creating AI generation stats:', error)",
+        "app/api/ai/track-generation/route.ts:    console.error('Error tracking AI generation:', error)"
+      ]
+    },
+    "console.warn": {
+      "count": 1,
+      "severity": "WARNING",
+      "description": "console.warn trouvés",
+      "lines": [
+        "app/api/daily-plan/route.ts:    console.warn(`      ⚠️ REJET: Limite de récursion atteinte (${recursionDepth})`)"
+      ]
+    },
+    "TEST_MODE": {
+      "count": 52,
+      "severity": "ERROR",
+      "description": "Flags TEST_MODE trouvés",
+      "lines": [
+        "app/api/agenda/route.ts:    const TEST_MODE = process.env.TEST_MODE_NO_AUTH === \"true\"",
+        "app/api/agenda/route.ts:    if (!user && !TEST_MODE) {",
+        "app/api/blocked-time-slots/route.ts:    const TEST_MODE = process.env.TEST_MODE_NO_AUTH === \"true\"",
+        "app/api/blocked-time-slots/route.ts:    if (!user && !TEST_MODE) {",
+        "app/api/blocked-time-slots/route.ts:    const TEST_MODE = process.env.TEST_MODE_NO_AUTH === \"true\"",
+        "app/api/blocked-time-slots/route.ts:    if (!user && !TEST_MODE) {",
+        "app/api/blocked-time-slots/[id]/route.ts:    const TEST_MODE = process.env.TEST_MODE_NO_AUTH === \"true\"",
+        "app/api/blocked-time-slots/[id]/route.ts:    if (!user && !TEST_MODE) {",
+        "app/api/blocked-time-slots/[id]/route.ts:    const TEST_MODE = process.env.TEST_MODE_NO_AUTH === \"true\"",
+        "app/api/blocked-time-slots/[id]/route.ts:    if (!user && !TEST_MODE) {"
+      ]
+    }
+  }
+}

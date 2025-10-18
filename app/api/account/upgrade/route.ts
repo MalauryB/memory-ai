@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { createAPILogger, logError } from '@/lib/logger'
 
 /**
  * POST /api/account/upgrade
@@ -11,6 +12,9 @@ import { NextResponse } from 'next/server'
  * }
  */
 export async function POST(request: Request) {
+  const apiLogger = createAPILogger("/api/account/upgrade", "POST")
+  const startTime = Date.now()
+
   try {
     const supabase = await createClient()
 
@@ -19,8 +23,11 @@ export async function POST(request: Request) {
     } = await supabase.auth.getUser()
 
     if (!user) {
+      apiLogger.warn("Unauthorized upgrade attempt")
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
+
+    apiLogger.info({ userId: user.id }, "Processing premium upgrade request")
 
     // Récupérer le profil actuel
     const { data: profile, error: profileError } = await supabase
@@ -30,12 +37,13 @@ export async function POST(request: Request) {
       .single()
 
     if (profileError) {
-      console.error('Error fetching user profile:', profileError)
+      apiLogger.error({ error: profileError.message }, "Failed to fetch user profile")
       return NextResponse.json({ error: 'Erreur lors de la récupération du profil' }, { status: 500 })
     }
 
     // Vérifier si déjà premium
     if (profile?.account_type === 'premium') {
+      apiLogger.info({ userId: user.id }, "User already has premium account")
       return NextResponse.json(
         {
           success: false,
@@ -47,7 +55,7 @@ export async function POST(request: Request) {
     }
 
     // TODO: Intégrer le système de paiement ici (Stripe, PayPal, etc.)
-    // Pour l'instant, on upgrade directement
+    apiLogger.warn({ userId: user.id }, "Payment integration not yet implemented - upgrading directly")
 
     // Mettre à jour le compte vers premium
     const { error: updateError } = await supabase
@@ -59,9 +67,18 @@ export async function POST(request: Request) {
       .eq('id', user.id)
 
     if (updateError) {
-      console.error('Error upgrading to premium:', updateError)
+      apiLogger.error({
+        userId: user.id,
+        error: updateError.message,
+      }, "Failed to upgrade account to premium")
       return NextResponse.json({ error: updateError.message }, { status: 500 })
     }
+
+    const duration = Date.now() - startTime
+    apiLogger.info({
+      userId: user.id,
+      duration: `${duration}ms`,
+    }, "Account successfully upgraded to premium")
 
     return NextResponse.json({
       success: true,
@@ -70,7 +87,7 @@ export async function POST(request: Request) {
       premium_since: new Date().toISOString(),
     })
   } catch (error) {
-    console.error('Error upgrading account:', error)
+    logError(error, "POST /api/account/upgrade")
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
@@ -80,6 +97,9 @@ export async function POST(request: Request) {
  * Downgrade un compte vers standard (pour tests ou annulation)
  */
 export async function DELETE() {
+  const apiLogger = createAPILogger("/api/account/upgrade", "DELETE")
+  const startTime = Date.now()
+
   try {
     const supabase = await createClient()
 
@@ -88,8 +108,11 @@ export async function DELETE() {
     } = await supabase.auth.getUser()
 
     if (!user) {
+      apiLogger.warn("Unauthorized downgrade attempt")
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
+
+    apiLogger.info({ userId: user.id }, "Processing downgrade to standard")
 
     // Mettre à jour le compte vers standard
     const { error: updateError } = await supabase
@@ -101,9 +124,18 @@ export async function DELETE() {
       .eq('id', user.id)
 
     if (updateError) {
-      console.error('Error downgrading to standard:', updateError)
+      apiLogger.error({
+        userId: user.id,
+        error: updateError.message,
+      }, "Failed to downgrade account to standard")
       return NextResponse.json({ error: updateError.message }, { status: 500 })
     }
+
+    const duration = Date.now() - startTime
+    apiLogger.info({
+      userId: user.id,
+      duration: `${duration}ms`,
+    }, "Account successfully downgraded to standard")
 
     return NextResponse.json({
       success: true,
@@ -111,7 +143,7 @@ export async function DELETE() {
       account_type: 'standard',
     })
   } catch (error) {
-    console.error('Error downgrading account:', error)
+    logError(error, "DELETE /api/account/upgrade")
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
@@ -121,6 +153,9 @@ export async function DELETE() {
  * Récupère le statut du compte (standard ou premium)
  */
 export async function GET() {
+  const apiLogger = createAPILogger("/api/account/upgrade", "GET")
+  const startTime = Date.now()
+
   try {
     const supabase = await createClient()
 
@@ -129,8 +164,11 @@ export async function GET() {
     } = await supabase.auth.getUser()
 
     if (!user) {
+      apiLogger.warn("Unauthorized account status check")
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
+
+    apiLogger.debug({ userId: user.id }, "Fetching account status")
 
     // Récupérer le profil
     const { data: profile, error: profileError } = await supabase
@@ -140,9 +178,16 @@ export async function GET() {
       .single()
 
     if (profileError) {
-      console.error('Error fetching user profile:', profileError)
+      apiLogger.error({ error: profileError.message }, "Failed to fetch user profile")
       return NextResponse.json({ error: 'Erreur lors de la récupération du profil' }, { status: 500 })
     }
+
+    const duration = Date.now() - startTime
+    apiLogger.debug({
+      userId: user.id,
+      accountType: profile?.account_type || 'standard',
+      duration: `${duration}ms`,
+    }, "Account status fetched")
 
     return NextResponse.json({
       success: true,
@@ -151,7 +196,7 @@ export async function GET() {
       is_premium: profile?.account_type === 'premium',
     })
   } catch (error) {
-    console.error('Error fetching account status:', error)
+    logError(error, "GET /api/account/upgrade")
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

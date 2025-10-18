@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, memo, useCallback } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Check, Flame, Calendar, Trash2, MoreVertical } from "lucide-react"
@@ -31,11 +31,11 @@ interface TrackerCardProps {
   isCompletedToday?: boolean
 }
 
-export function TrackerCard({ tracker, onComplete, onClick, onDelete, isCompletedToday = false }: TrackerCardProps) {
+function TrackerCardComponent({ tracker, onComplete, onClick, onDelete, isCompletedToday = false }: TrackerCardProps) {
   const [isCompleting, setIsCompleting] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
-  const handleComplete = async (e: React.MouseEvent) => {
+  const handleComplete = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation()
     if (isCompletedToday || !onComplete) return
 
@@ -46,16 +46,16 @@ export function TrackerCard({ tracker, onComplete, onClick, onDelete, isComplete
     } finally {
       setIsCompleting(false)
     }
-  }
+  }, [isCompletedToday, onComplete, tracker.id])
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (onDelete) {
       await onDelete(tracker.id)
     }
     setShowDeleteDialog(false)
-  }
+  }, [onDelete, tracker.id])
 
-  const getFrequencyText = () => {
+  const getFrequencyText = useCallback(() => {
     switch (tracker.frequency) {
       case "daily":
         return "Tous les jours"
@@ -66,7 +66,7 @@ export function TrackerCard({ tracker, onComplete, onClick, onDelete, isComplete
       default:
         return "Personnalisé"
     }
-  }
+  }, [tracker.frequency, tracker.frequency_value])
 
   return (
     <>
@@ -162,3 +162,6 @@ export function TrackerCard({ tracker, onComplete, onClick, onDelete, isComplete
   </>
   )
 }
+
+// Export avec React.memo pour éviter les re-renders inutiles
+export const TrackerCard = memo(TrackerCardComponent)

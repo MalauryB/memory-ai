@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, memo, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
@@ -57,7 +57,7 @@ interface Props {
   onStepStatusChange: () => void
 }
 
-export function StepWithSubsteps({
+function StepWithSubstepsComponent({
   step,
   stepIndex,
   projectId,
@@ -84,13 +84,7 @@ export function StepWithSubsteps({
   const [deletingSubstep, setDeletingSubstep] = useState<string | null>(null)
   const [hasBeenDecomposed, setHasBeenDecomposed] = useState(false)
 
-  useEffect(() => {
-    if (isExpanded && substeps.length === 0 && !hasBeenDecomposed) {
-      fetchSubsteps()
-    }
-  }, [isExpanded])
-
-  async function fetchSubsteps() {
+  const fetchSubsteps = useCallback(async () => {
     setLoadingSubsteps(true)
     try {
       const response = await fetch(`/api/projects/${projectId}/steps/${step.id}/substeps`)
@@ -105,9 +99,15 @@ export function StepWithSubsteps({
     } finally {
       setLoadingSubsteps(false)
     }
-  }
+  }, [projectId, step.id])
 
-  async function generateSubsteps() {
+  useEffect(() => {
+    if (isExpanded && substeps.length === 0 && !hasBeenDecomposed) {
+      fetchSubsteps()
+    }
+  }, [isExpanded, substeps.length, hasBeenDecomposed, fetchSubsteps])
+
+  const generateSubsteps = useCallback(async () => {
     setGeneratingSubsteps(true)
     try {
       // Générer les sous-étapes avec Claude
@@ -157,9 +157,9 @@ export function StepWithSubsteps({
     } finally {
       setGeneratingSubsteps(false)
     }
-  }
+  }, [step.title, step.description, step.id, projectTitle, projectCategory, projectId, fetchSubsteps])
 
-  async function handleUpgrade() {
+  const handleUpgrade = useCallback(async () => {
     try {
       const response = await fetch('/api/account/upgrade', {
         method: 'POST'
@@ -178,9 +178,9 @@ export function StepWithSubsteps({
       console.error('Error upgrading:', error)
       alert('Erreur lors de l\'upgrade. Veuillez réessayer.')
     }
-  }
+  }, [])
 
-  async function updateStepStatus(newStatus: "pending" | "in_progress" | "completed") {
+  const updateStepStatus = useCallback(async (newStatus: "pending" | "in_progress" | "completed") => {
     setUpdatingStep(true)
     try {
       const response = await fetch(`/api/projects/${projectId}/steps/${step.id}`, {
@@ -199,12 +199,12 @@ export function StepWithSubsteps({
     } finally {
       setUpdatingStep(false)
     }
-  }
+  }, [projectId, step.id, onStepStatusChange])
 
-  async function updateSubstepStatus(
+  const updateSubstepStatus = useCallback(async (
     substepId: string,
     newStatus: "pending" | "in_progress" | "completed"
-  ) {
+  ) => {
     setUpdatingSubstep(substepId)
     try {
       const response = await fetch(
@@ -227,9 +227,9 @@ export function StepWithSubsteps({
     } finally {
       setUpdatingSubstep(null)
     }
-  }
+  }, [projectId, step.id, fetchSubsteps, onStepStatusChange])
 
-  const getNextStatus = (currentStatus: string) => {
+  const getNextStatus = useCallback((currentStatus: string) => {
     switch (currentStatus) {
       case "pending":
         return "in_progress"
@@ -240,9 +240,9 @@ export function StepWithSubsteps({
       default:
         return "pending"
     }
-  }
+  }, [])
 
-  function openEditDialog(substep: ProjectSubstep) {
+  const openEditDialog = useCallback((substep: ProjectSubstep) => {
     setEditingSubstep(substep)
     setEditForm({
       title: substep.title,
@@ -251,9 +251,9 @@ export function StepWithSubsteps({
       scheduled_date: substep.scheduled_date || "",
     })
     setIsEditDialogOpen(true)
-  }
+  }, [])
 
-  async function saveSubstepEdit() {
+  const saveSubstepEdit = useCallback(async () => {
     if (!editingSubstep) return
 
     setSavingEdit(true)
@@ -284,9 +284,9 @@ export function StepWithSubsteps({
     } finally {
       setSavingEdit(false)
     }
-  }
+  }, [editingSubstep, projectId, step.id, editForm, fetchSubsteps])
 
-  async function deleteSubstep(substepId: string) {
+  const deleteSubstep = useCallback(async (substepId: string) => {
     if (!confirm("Êtes-vous sûr de vouloir supprimer cette sous-étape ?")) return
 
     setDeletingSubstep(substepId)
@@ -307,16 +307,16 @@ export function StepWithSubsteps({
     } finally {
       setDeletingSubstep(null)
     }
-  }
+  }, [projectId, step.id, fetchSubsteps, onStepStatusChange])
 
-  const formatDate = (dateStr: string | null) => {
+  const formatDate = useCallback((dateStr: string | null) => {
     if (!dateStr) return null
     const date = new Date(dateStr)
     return date.toLocaleDateString("fr-FR", {
       day: "numeric",
       month: "short",
     })
-  }
+  }, [])
 
   const completedSubsteps = substeps.filter((s) => s.status === "completed").length
   const totalSubsteps = substeps.length
@@ -672,3 +672,15 @@ export function StepWithSubsteps({
   </>
   )
 }
+
+// Export avec React.memo et comparaison personnalisée
+export const StepWithSubsteps = memo(StepWithSubstepsComponent, (prevProps, nextProps) => {
+  // Ne re-render que si les props critiques changent
+  return (
+    prevProps.step.id === nextProps.step.id &&
+    prevProps.step.status === nextProps.step.status &&
+    prevProps.step.title === nextProps.step.title &&
+    prevProps.step.description === nextProps.step.description &&
+    prevProps.projectId === nextProps.projectId
+  )
+})
